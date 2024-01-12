@@ -143,6 +143,8 @@ void renderScene(GLFWwindow* window)
 	drawObjectTexture(sphereContext, glm::mat4(), texture::rust, texture::rustNormal);
 
 	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(4.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::earth, texture::earthNormal);
+	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(8.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.1f)), texture::earth, texture::earthNormal);
+
 
 	drawObjectTexture(sphereContext,
 		glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(4.f, 0, 0)) * glm::eulerAngleY(time) * glm::translate(glm::vec3(1.f, 0, 0)) * glm::scale(glm::vec3(0.1f)), texture::moon, texture::moonNormal);
