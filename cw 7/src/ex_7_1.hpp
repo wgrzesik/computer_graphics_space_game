@@ -4,18 +4,18 @@
 #include "ext.hpp"
 #include <iostream>
 #include <cmath>
-
+#include <random>
+#include <future>
+#include <chrono>
 #include "Shader_Loader.h"
 #include "Render_Utils.h"
 #include "Texture.h"
-
 #include "Box.cpp"
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <string>
 #include "SOIL/SOIL.h"
-
 
 namespace texture {
 	GLuint earth;
@@ -58,8 +58,24 @@ glm::vec3 cameraDir = glm::vec3(1.f, 0.f, 0.f);
 
 glm::vec3 spaceshipPos = glm::vec3(-4.f, 0, 0);
 glm::vec3 spaceshipDir = glm::vec3(1.f, 0.f, 0.f);
-GLuint VAO,VBO;
 
+bool START_AS = false;
+float a = 3 ;
+
+std::random_device rd;
+std::mt19937 gen(rd());
+std::uniform_real_distribution<float> distribution(-0.5f, 0.5f);
+std::uniform_real_distribution<float> planetoidsYDistribution(-1.f, 1.f);
+std::uniform_real_distribution<float> planetoidsScaleDistribution(0.01f, 0.05f);
+float planetoidsArray[500][4];
+glm::vec3 asteroid_Calc = spaceshipDir * glm::vec3(a, a, a);
+glm::vec3 asteroid_Pos = spaceshipPos + glm::vec3(0, a, 0) + asteroid_Calc;
+glm::vec3 distance = asteroid_Pos - spaceshipPos;
+
+double step = 0.0000001;
+
+GLuint VAO,VBO;
+float lastAsteroidTime = 0;
 float aspectRatio = 1.f;
 
 unsigned int textureID;
@@ -109,10 +125,11 @@ void drawObjectColor(Core::RenderContext& context, glm::mat4 modelMatrix, glm::v
 	glUniformMatrix4fv(glGetUniformLocation(program, "transformation"), 1, GL_FALSE, (float*)&transformation);
 	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
 	glUniform3f(glGetUniformLocation(program, "color"), color.x, color.y, color.z);
-	glUniform3f(glGetUniformLocation(program, "lightPos"), 0,0,0);
+	glUniform3f(glGetUniformLocation(program, "lightPos"), 0, 0, 0);
 	Core::DrawContext(context);
 
 }
+
 void drawObjectTexture(Core::RenderContext& context, glm::mat4 modelMatrix, GLuint textureID, GLuint normalMapId) {
 	glUseProgram(programTex);
 	glm::mat4 viewProjectionMatrix = createPerspectiveMatrix() * createCameraMatrix();
@@ -139,6 +156,39 @@ void drawObjectSkyBox(Core::RenderContext& context, glm::mat4 modelMatrix) {
 	glEnable(GL_DEPTH_TEST);
 
 }
+
+void generateAsteroids(glm::vec3 asteroid_Pos, glm::vec3 distance, double step) {
+	glm::vec3 normalizedDir = glm::normalize(distance);
+	asteroid_Pos = asteroid_Pos - normalizedDir *step;
+	drawObjectTexture(sphereContext, glm::translate(asteroid_Pos) * glm::scale(glm::vec3(0.1f)), texture::moon, texture::moonNormal);
+			
+}
+
+void generatePlanetoidBelt() {
+
+	for (int i = 0; i < 500; ++i) {
+		
+		float x = planetoidsArray[i][0];
+		float z = planetoidsArray[i][1];
+		float y = planetoidsArray[i][2];
+		float pScale = planetoidsArray[i][3];
+
+		float time = glfwGetTime();
+
+		drawObjectTexture(sphereContext,glm::eulerAngleY(time / 5) * glm::translate(glm::vec3(x, y, z)) * glm::scale(glm::vec3(pScale)), texture::moon, texture::moonNormal);
+	}
+}
+
+int steps = 0;
+glm::vec3 spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
+glm::vec3 spaceshipUp = glm::normalize(glm::cross(spaceshipSide, spaceshipDir));
+glm::mat4 specshipCameraRotrationMatrix = glm::mat4({
+	spaceshipSide.x,spaceshipSide.y,spaceshipSide.z,0,
+	spaceshipUp.x,spaceshipUp.y,spaceshipUp.z ,0,
+	-spaceshipDir.x,-spaceshipDir.y,-spaceshipDir.z,0,
+	0.,0.,0.,1.,
+	});
+
 void renderScene(GLFWwindow* window)
 {
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
@@ -162,35 +212,59 @@ void renderScene(GLFWwindow* window)
 	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 7) * glm::translate(glm::vec3(20.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::uranus, texture::rustNormal);
 	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 8) * glm::translate(glm::vec3(23.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::neptune, texture::rustNormal);
 
-	glm::vec3 spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
-	glm::vec3 spaceshipUp = glm::normalize(glm::cross(spaceshipSide, spaceshipDir));
-	glm::mat4 specshipCameraRotrationMatrix = glm::mat4({
+	
+
+	//drawObjectColor(shipContext,
+	//	glm::translate(cameraPos + 1.5 * cameraDir + cameraUp * -0.5f) * inveseCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>()),
+	//	glm::vec3(0.3, 0.3, 0.5)
+	//	);
+	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
+	spaceshipUp = glm::normalize(glm::cross(spaceshipSide, spaceshipDir));
+	specshipCameraRotrationMatrix = glm::mat4({
 		spaceshipSide.x,spaceshipSide.y,spaceshipSide.z,0,
 		spaceshipUp.x,spaceshipUp.y,spaceshipUp.z ,0,
 		-spaceshipDir.x,-spaceshipDir.y,-spaceshipDir.z,0,
 		0.,0.,0.,1.,
 		});
 
-
-	//drawObjectColor(shipContext,
-	//	glm::translate(cameraPos + 1.5 * cameraDir + cameraUp * -0.5f) * inveseCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>()),
-	//	glm::vec3(0.3, 0.3, 0.5)
-	//	);
 	drawObjectTexture(shipContext,
-		glm::translate(spaceshipPos) * specshipCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>()),
+		glm::translate(spaceshipPos) * specshipCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>())*glm::scale(glm::vec3(0.1f)),
 		texture::ship, texture::shipNormal
 	);
 
-	
+	generatePlanetoidBelt();
 
-	
+	if (time - lastAsteroidTime < 5 && START_AS) {	//funkcja generujaca pierwsza asteroide 
+		step = step + 0.03;
+		generateAsteroids(asteroid_Pos, distance, step);
+		//steps++;
+		//std::cout << steps << std::endl;
+	}
+	else {
+		float random_x = distribution(gen);
+		float random_y = distribution(gen);
+		float random_z = distribution(gen);
+		//std::cout << random_x << std::endl;
+		glm::vec3 random_dir = glm::normalize(glm::vec3(spaceshipDir.x + random_x, spaceshipDir.y +  random_y, spaceshipDir.z +  random_z));
 
+		asteroid_Calc = a * random_dir;
+		glm::vec3 estimated_Spaceship_Pos = spaceshipPos + glm::vec3(1.f, 1.f, 1.f) * glm::normalize(spaceshipDir);
+		asteroid_Pos = spaceshipPos + glm::vec3(0, a / 5, 0) + asteroid_Calc;
+		
+		distance = asteroid_Pos - estimated_Spaceship_Pos;
+		lastAsteroidTime = time;
+		step = 0.0001;
+		//std::cout << cameraDir.x << cameraDir.y << cameraDir.z << std::endl;
+		//steps = 0;
+	}
 	glUseProgram(0);
 	glfwSwapBuffers(window);
 }
+
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-	aspectRatio = width / float(height);
+	aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 	glViewport(0, 0, width, height);
 }
 void loadModelToContext(std::string path, Core::RenderContext& context)
@@ -251,6 +325,19 @@ void init(GLFWwindow* window)
 	
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+	std::uniform_real_distribution<float> angleDistribution(0.0f, 2.0f * glm::pi<float>());
+	std::uniform_real_distribution<float> radiusDistribution(10.f, 17.f);
+
+	for (int i = 0; i < 500; ++i) {
+		float angle = angleDistribution(gen);
+		float radius = radiusDistribution(gen);
+		float y = planetoidsYDistribution(gen);
+		float pScale = planetoidsScaleDistribution(gen);
+		planetoidsArray[i][0] = radius * std::cos(angle);
+		planetoidsArray[i][1] = radius * std::sin(angle);
+		planetoidsArray[i][2] = y;
+		planetoidsArray[i][3] = pScale;
+	}
 
 	std::vector<std::string> filepaths = {
 		"textures/skybox/space_rt.png",
@@ -301,13 +388,38 @@ void shutdown(GLFWwindow* window)
 	shaderLoader.DeleteProgram(program);
 }
 
+double lastX = 0.0;
+double lastY = 0.0;
+
+void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
+	
+	double deltaX = xpos - lastX;
+	double deltaY = ypos - lastY;
+	lastX = xpos;
+	lastY = ypos;
+	//std::cout << lastY << "   " << ypos << std::endl;
+	const float sensitivity = 0.001f;
+	deltaX *= sensitivity;
+	deltaY *= sensitivity;
+	glm::mat4 rotationMatrix = glm::eulerAngleY(-deltaX);
+	spaceshipDir = glm::normalize(rotationMatrix * glm::vec4(spaceshipDir,0));
+	spaceshipDir = spaceshipDir + glm::vec3(0, - deltaY / 4, 0);
+	/*specshipCameraRotrationMatrix = glm::rotate(specshipCameraRotrationMatrix, static_cast<float>(deltaX), glm::vec3(0.f, 1.f, 0.f));
+	specshipCameraRotrationMatrix = glm::rotate(specshipCameraRotrationMatrix, static_cast<float>(deltaY), spaceshipSide);
+	spaceshipDir = glm::normalize(glm::vec3(-specshipCameraRotrationMatrix[2]));
+	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
+	spaceshipUp = glm::normalize(glm::cross(spaceshipSide, spaceshipDir));*/
+}
 //obsluga wejscia
 void processInput(GLFWwindow* window)
 {
-	glm::vec3 spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
-	glm::vec3 spaceshipUp = glm::vec3(0.f, 1.f, 0.f);
-	float angleSpeed = 0.005f;
-	float moveSpeed = 0.0025f;
+	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
+	spaceshipUp = glm::vec3(0.f, 1.f, 0.f);
+	float angleSpeed = 0.01f;
+	float moveSpeed = 0.01f;
+
+	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
 	}
@@ -327,8 +439,12 @@ void processInput(GLFWwindow* window)
 		spaceshipDir = glm::vec3(glm::eulerAngleY(angleSpeed) * glm::vec4(spaceshipDir, 0));
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		spaceshipDir = glm::vec3(glm::eulerAngleY(-angleSpeed) * glm::vec4(spaceshipDir, 0));
+	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
+		START_AS = true;
 
-	cameraPos = spaceshipPos - 1.5 * spaceshipDir + glm::vec3(0, 1, 0) * 0.5f;
+	glfwSetCursorPosCallback(window, mouseCallback);
+
+	cameraPos = spaceshipPos - 0.5 * spaceshipDir + glm::vec3(0, 2, 0) * 0.1f;
 	cameraDir = spaceshipDir;
 
 	//cameraDir = glm::normalize(-cameraPos);
@@ -345,4 +461,3 @@ void renderLoop(GLFWwindow* window) {
 		glfwPollEvents();
 	}
 }
-//}
