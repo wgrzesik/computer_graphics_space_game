@@ -24,6 +24,14 @@ namespace texture {
 	GLuint ship;
 	GLuint rust;
 
+	GLuint mars;
+	GLuint mercury;
+	GLuint venus;
+	GLuint jupiter;
+	GLuint saturn;
+	GLuint uranus;
+	GLuint neptune;
+
 	GLuint grid;
 
 	GLuint earthNormal;
@@ -140,14 +148,19 @@ void renderScene(GLFWwindow* window)
 	drawObjectSkyBox(cubeContext, glm::translate(cameraPos));
 
 
-	drawObjectTexture(sphereContext, glm::mat4(), texture::rust, texture::rustNormal);
+	drawObjectTexture(sphereContext, glm::scale(glm::mat4(), glm::vec3(2.0f, 2.0f, 2.0f)), texture::rust, texture::rustNormal);
 
-	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(4.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::earth, texture::earthNormal);
-	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(8.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.1f)), texture::earth, texture::earthNormal);
-
-
+	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(8.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::earth, texture::earthNormal);
 	drawObjectTexture(sphereContext,
-		glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(4.f, 0, 0)) * glm::eulerAngleY(time) * glm::translate(glm::vec3(1.f, 0, 0)) * glm::scale(glm::vec3(0.1f)), texture::moon, texture::moonNormal);
+		glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(8.f, 0, 0)) * glm::eulerAngleY(time) * glm::translate(glm::vec3(1.f, 0, 0)) * glm::scale(glm::vec3(0.1f)), texture::moon, texture::moonNormal);
+
+	drawObjectTexture(sphereContext, glm::eulerAngleY(time) * glm::translate(glm::vec3(4.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.15f)), texture::mercury, texture::rustNormal);
+	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 4) * glm::translate(glm::vec3(10.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.2f)), texture::mars, texture::rustNormal);
+	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 2) * glm::translate(glm::vec3(6.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::venus, texture::rustNormal);
+	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 5) * glm::translate(glm::vec3(14.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.9f)), texture::jupiter, texture::rustNormal);
+	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 6) * glm::translate(glm::vec3(17.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.9f)), texture::saturn, texture::rustNormal);
+	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 7) * glm::translate(glm::vec3(20.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::uranus, texture::rustNormal);
+	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 8) * glm::translate(glm::vec3(23.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::neptune, texture::rustNormal);
 
 	glm::vec3 spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
 	glm::vec3 spaceshipUp = glm::normalize(glm::cross(spaceshipSide, spaceshipDir));
@@ -218,6 +231,17 @@ void init(GLFWwindow* window)
 	texture::ship = Core::LoadTexture("textures/spaceship.jpg");
 	texture::moon = Core::LoadTexture("textures/moon.jpg");
 	texture::rust = Core::LoadTexture("textures/rust.jpg");
+
+	texture::mars = Core::LoadTexture("textures/2k_mars.jpg");
+	texture::mercury = Core::LoadTexture("textures/2k_mercury.jpg");
+	texture::venus = Core::LoadTexture("textures/2k_venus_surface.jpg");
+	texture::jupiter = Core::LoadTexture("textures/2k_jupiter.jpg");
+	texture::saturn = Core::LoadTexture("textures/8k_saturn.jpg");
+	texture::uranus = Core::LoadTexture("textures/2k_uranus.jpg");
+	texture::neptune = Core::LoadTexture("textures/2k_neptune.jpg");
+
+
+
 
 	texture::earthNormal = Core::LoadTexture("textures/earth_normalmap.png");
 	texture::shipNormal = Core::LoadTexture("textures/spaceship_normal.jpg");
