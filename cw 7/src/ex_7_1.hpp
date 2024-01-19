@@ -346,22 +346,6 @@ void init(GLFWwindow* window)
 		"textures/skybox/space_dn.png",
 		"textures/skybox/space_bk.png",
 		"textures/skybox/space_ft.png",
-
-
-		//"textures/skybox/corona_rt.png",
-		//"textures/skybox/corona_lf.png",
-		//"textures/skybox/corona_up.png",
-		//"textures/skybox/corona_dn.png",
-		//
-		//"textures/skybox/corona_bk.png",
-		//"textures/skybox/corona_ft.png",
-
-		//"textures/skybox_new/posx.jpg",
-		//"textures/skybox_new/negx.jpg",
-		//"textures/skybox_new/posy.jpg",
-		//"textures/skybox_new/negy.jpg",
-		//"textures/skybox_new/posz.jpg",
-		//"textures/skybox_new/negz.jpg"
 	};
 
 	int w, h;
