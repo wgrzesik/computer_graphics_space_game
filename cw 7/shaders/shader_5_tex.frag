@@ -1,6 +1,6 @@
 #version 430 core
 
-float AMBIENT = 0.3;
+float AMBIENT = 0.9;
 float roughness = 0.2;
 float metalic = 0.8;
 
@@ -29,11 +29,11 @@ void main()
 	N = 2.0 * N - 1.0;
 	N = normalize(N);
 
-	vec3 H = normalize(L + V); // mo¿e trzeba zmieniæ plus na minus
-    float NdotH = max(0.0, dot(N, H)); // zamieniæ kolejnoœæ i 00000001 
-    float NdotL = max(0.0, dot(N, L));
+	vec3 H = normalize(L + V); 
+    float NdotH = max(0.0, dot(N, H)); 
+    float NdotL = max(dot(N, L),0.0000001 );
     float NdotV = max(0.0, dot(N, V));
-    float VdotH = max(0.0, dot(V, H));
+    float VdotH = max(0.00001, dot(V, H));
 	float k = pow((roughness +1),2.0)/8.0;
 
 
@@ -42,9 +42,9 @@ void main()
 	float ggx2 = NdotL / (NdotL * (1.0 - k) + k);
 	vec3 F0 = vec3(0.04); 
     float G = ggx1 * ggx2;
-	vec3 F = F0 + (1.0-F0)*pow(1-VdotH,5.0);
+	vec3 F = F0 + (1.0-F0)*pow(1-dot(V,H),5.0);
 
-	vec3 specular = (D*G*F)/(4*NdotL*NdotV);
+	vec3 specular = (D*G*F)/(4*NdotL*NdotV+0.00001);
 	vec3 kD = vec3(1.0) - F;
 
 	vec3 BRDF = kD*(textureColor/3.1458493) + specular;
@@ -53,7 +53,9 @@ void main()
 
 
 
-	float diffuse=max(0,dot(N,L));
+	float diffuse=max(0.0001,dot(N,L));
+	vec3 lambertian = max(0.00001, dot(N,L))*textureColor;
 
-	outColor = vec4(( textureColor * min(1,AMBIENT+diffuse)), 1.0);
+	vec3 Final = (kD*textureColor/3.1458993) + specular;
+	outColor = vec4(Final*min(1.0,AMBIENT + diffuse), 1.0);
 }

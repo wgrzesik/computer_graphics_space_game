@@ -10,6 +10,6 @@ out vec3 interpNormal;
 
 void main()
 {
-	gl_Position = transformation * vec4(vertexPosition, 1.0);
+	
 	interpNormal = vertexNormal;
 }
