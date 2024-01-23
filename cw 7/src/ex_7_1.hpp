@@ -24,6 +24,8 @@ namespace texture {
 	GLuint ship;
 	GLuint rust;
 
+	GLuint sun;
+
 	GLuint mars;
 	GLuint mercury;
 	GLuint venus;
@@ -47,11 +49,15 @@ GLuint programTex;
 GLuint programEarth;
 GLuint programProcTex;
 GLuint programSkyBox;
+GLuint programBloom;
+GLuint programQuad;
+
 Core::Shader_Loader shaderLoader;
 
 Core::RenderContext shipContext;
 Core::RenderContext sphereContext;
 Core::RenderContext cubeContext;
+Core::RenderContext test;
 
 glm::vec3 cameraPos = glm::vec3(-4.f, 0, 0);
 glm::vec3 cameraDir = glm::vec3(1.f, 0.f, 0.f);
@@ -79,6 +85,20 @@ float lastAsteroidTime = 0;
 float aspectRatio = 1.f;
 
 unsigned int textureID;
+
+
+unsigned int hdrFBO;
+GLuint testMap;
+
+unsigned int colorBuffers[2];
+
+int WIDTH = 800;
+int HEIGHT = 800;
+
+unsigned int rectVAO, rectVBO;
+
+
+
 
 glm::mat4 createCameraMatrix()
 {
@@ -131,6 +151,7 @@ void drawObjectColor(Core::RenderContext& context, glm::mat4 modelMatrix, glm::v
 }
 
 void drawObjectTexture(Core::RenderContext& context, glm::mat4 modelMatrix, GLuint textureID, GLuint normalMapId) {
+	//glEnable(GL_DEPTH_TEST);
 	glUseProgram(programTex);
 	glm::mat4 viewProjectionMatrix = createPerspectiveMatrix() * createCameraMatrix();
 	glm::mat4 transformation = viewProjectionMatrix * modelMatrix;
@@ -139,10 +160,21 @@ void drawObjectTexture(Core::RenderContext& context, glm::mat4 modelMatrix, GLui
 	glUniform3f(glGetUniformLocation(programTex, "lightPos"), 0, 0, 0);
 	Core::SetActiveTexture(normalMapId, "normalSampler", programTex, 1);
 	Core::SetActiveTexture(textureID, "colorTexture", programTex, 0);
+
+	glUseProgram(programBloom);
+	glUniform1i(glGetUniformLocation(programBloom, "screenTexture"), 0);
+	glUniform1i(glGetUniformLocation(programBloom, "bloomTexture"), 1);
+	glUniform1f(glGetUniformLocation(programBloom, "gamma"), 2.2f);
+
+	glEnable(GL_DEPTH_TEST);
+
 	Core::DrawContext(context);
+
+	//Core::SetActiveTexture(colorBuffers[0], "colorTexture", programQuad, 0);
 
 }
 void drawObjectSkyBox(Core::RenderContext& context, glm::mat4 modelMatrix) {
+
 	glDisable(GL_DEPTH_TEST);
 	glUseProgram(programSkyBox);
 	glm::mat4 viewProjectionMatrix = createPerspectiveMatrix() * createCameraMatrix();
@@ -150,12 +182,35 @@ void drawObjectSkyBox(Core::RenderContext& context, glm::mat4 modelMatrix) {
 	glUniformMatrix4fv(glGetUniformLocation(programSkyBox, "transformation"), 1, GL_FALSE, (float*)&transformation);
 	glUniformMatrix4fv(glGetUniformLocation(programSkyBox, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
 	glUniform3f(glGetUniformLocation(programSkyBox, "lightPos"), 0, 0, 0);
-	//Core::SetActiveTexture(textureID, "colorTexture", programSkyBox, 0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 	Core::DrawContext(context);
 	glEnable(GL_DEPTH_TEST);
 
 }
+
+
+//void drawObjectBloom(Core::RenderContext& context, glm::mat4 modelMatrix, GLuint textureID, GLuint normalMapId) {
+//
+//	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+//	glUseProgram(programTex);
+//	glm::mat4 viewProjectionMatrix = createPerspectiveMatrix() * createCameraMatrix();
+//	glm::mat4 transformation = viewProjectionMatrix * modelMatrix;
+//	glUniformMatrix4fv(glGetUniformLocation(programTex, "transformation"), 1, GL_FALSE, (float*)&transformation);
+//	glUniformMatrix4fv(glGetUniformLocation(programTex, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
+//	glUniform3f(glGetUniformLocation(programTex, "lightPos"), 0, 0, 0);
+//	Core::SetActiveTexture(normalMapId, "normalSampler", programTex, 2);
+//	Core::SetActiveTexture(textureID, "colorTexture", programTex, 1);
+//	Core::DrawContext(context);
+//
+//	glUseProgram(programBloom);
+//	glUniform1i(glGetUniformLocation(programBloom, "screenTexture"), 0);
+//	glUniform1i(glGetUniformLocation(programBloom, "bloomTexture"), 1);
+//	glUniform1f(glGetUniformLocation(programBloom, "gamma"), 2.2f);
+//
+//	//Core::DrawContext(context);
+//
+//
+//}
 
 void generateAsteroids(glm::vec3 asteroid_Pos, glm::vec3 distance, double step) {
 	glm::vec3 normalizedDir = glm::normalize(distance);
@@ -189,16 +244,52 @@ glm::mat4 specshipCameraRotrationMatrix = glm::mat4({
 	0.,0.,0.,1.,
 	});
 
+unsigned int quadVAO = 0;
+unsigned int quadVBO;
+void renderQuad()
+{
+	if (quadVAO == 0)
+	{
+		float quadVertices[] = {
+			// positions        // texture coords
+			-1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+			-1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+			 1.0f,  1.0f, 0.0f, 1.0f, 1.0f,
+			 1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+		};
+
+		// setup plane VAO
+		glGenVertexArrays(1, &quadVAO);
+		glGenBuffers(1, &quadVBO);
+		glBindVertexArray(quadVAO);
+		glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+		glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+		glEnableVertexAttribArray(1);
+		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+	}
+	glBindVertexArray(quadVAO);
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glBindVertexArray(0);
+}
+
+
 void renderScene(GLFWwindow* window)
 {
-	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+	glClearColor(0.0f, 0.f, 0.f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+
 	glm::mat4 transformation;
 	float time = glfwGetTime();
+
 	drawObjectSkyBox(cubeContext, glm::translate(cameraPos));
 
+	//drawObjectTexture(sphereContext, glm::scale(glm::mat4(), glm::vec3(2.0f, 2.0f, 2.0f)), texture::rust, texture::rustNormal);
+	drawObjectTexture(sphereContext, glm::scale(glm::mat4(), glm::vec3(2.0f, 2.0f, 2.0f)), texture::sun, texture::rustNormal);
 
-	drawObjectTexture(sphereContext, glm::scale(glm::mat4(), glm::vec3(2.0f, 2.0f, 2.0f)), texture::rust, texture::rustNormal);
 
 	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(8.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::earth, texture::earthNormal);
 	drawObjectTexture(sphereContext,
@@ -213,11 +304,6 @@ void renderScene(GLFWwindow* window)
 	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 8) * glm::translate(glm::vec3(23.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::neptune, texture::rustNormal);
 
 	
-
-	//drawObjectColor(shipContext,
-	//	glm::translate(cameraPos + 1.5 * cameraDir + cameraUp * -0.5f) * inveseCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>()),
-	//	glm::vec3(0.3, 0.3, 0.5)
-	//	);
 	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
 	spaceshipUp = glm::normalize(glm::cross(spaceshipSide, spaceshipDir));
 	specshipCameraRotrationMatrix = glm::mat4({
@@ -258,14 +344,60 @@ void renderScene(GLFWwindow* window)
 		//steps = 0;
 	}
 	glUseProgram(0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glUseProgram(programQuad);
+	//Core::SetActiveTexture(colorBuffers[0], "colorTexture", programQuad, 0);
+	//Core::SetActiveTexture(colorBuffers[1], "highlightTexture", programQuad, 1);
+	glUniform1i(glGetUniformLocation(programQuad, "originalTexture"), 0);
+	glUniform1i(glGetUniformLocation(programQuad, "bloomTexture"), 1);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, colorBuffers[1]);
+
+	renderQuad();
+	//Core::DrawContext(test);
+
+	//glBindTexture(GL_TEXTURE_2D, 0);
+	//glUseProgram(0);
+
 	glfwSwapBuffers(window);
+
+
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//// Draw the framebuffer rectangle
+	//glUseProgram(programQuad);
+	////glBindVertexArray(rectVAO);
+	////Core::DrawContext(test);
+	//renderQuad();
+	//glDisable(GL_DEPTH_TEST); // prevents framebuffer rectangle from being discarded
+	////glActiveTexture(GL_TEXTURE0);
+	////glBindTexture(GL_TEXTURE_2D, colorBuffers[0]);
+	////glActiveTexture(GL_TEXTURE1);
+	////glBindTexture(GL_TEXTURE_2D, colorBuffers[1]);
+	////glDrawArrays(GL_TRIANGLES, 0, 6);
+	//Core::SetActiveTexture(colorBuffers[0], "colorTexture", programQuad, 0);
+	//Core::SetActiveTexture(colorBuffers[1], "highlightTexture", programQuad, 1);
+
+	//glUseProgram(0);
+
+	//glfwSwapBuffers(window);
 }
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
-	aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+	//aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+	//glViewport(0, 0, width, height);
+	aspectRatio = width / float(height);
 	glViewport(0, 0, width, height);
+	WIDTH = 800;
+	HEIGHT = 800;
+
 }
 void loadModelToContext(std::string path, Core::RenderContext& context)
 {
@@ -283,19 +415,18 @@ void loadModelToContext(std::string path, Core::RenderContext& context)
 void init(GLFWwindow* window)
 {
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
 	glEnable(GL_DEPTH_TEST);
 	program = shaderLoader.CreateProgram("shaders/shader_5_1.vert", "shaders/shader_5_1.frag");
-
-	//programTex = shaderLoader.CreateProgram("shaders/shader_5_1_tex.vert", "shaders/shader_5_1_tex.frag");
-	//programEarth = shaderLoader.CreateProgram("shaders/shader_5_1_tex.vert", "shaders/shader_5_1_tex.frag");
-	//programProcTex = shaderLoader.CreateProgram("shaders/shader_5_1_tex.vert", "shaders/shader_5_1_tex.frag");
 
 	programTex = shaderLoader.CreateProgram("shaders/shader_5_tex.vert", "shaders/shader_5_tex.frag");
 	programEarth = shaderLoader.CreateProgram("shaders/shader_5_tex.vert", "shaders/shader_5_tex.frag");
 	programProcTex = shaderLoader.CreateProgram("shaders/shader_5_tex.vert", "shaders/shader_5_tex.frag");
 
 	programSkyBox = shaderLoader.CreateProgram("shaders/shader_skybox.vert", "shaders/shader_skybox.frag");
+
+	programQuad = shaderLoader.CreateProgram("shaders/shader_quad.vert", "shaders/shader_quad.frag");
+
+	programBloom = shaderLoader.CreateProgram("shaders/shader_bloom.vert", "shaders/shader_bloom.frag");
 
 	loadModelToContext("./models/sphere.obj", sphereContext);
 	loadModelToContext("./models/spaceship.obj", shipContext);
@@ -306,6 +437,8 @@ void init(GLFWwindow* window)
 	texture::moon = Core::LoadTexture("textures/moon.jpg");
 	texture::rust = Core::LoadTexture("textures/rust.jpg");
 
+	texture::sun = Core::LoadTexture("textures/2k_sun.jpg");
+
 	texture::mars = Core::LoadTexture("textures/2k_mars.jpg");
 	texture::mercury = Core::LoadTexture("textures/2k_mercury.jpg");
 	texture::venus = Core::LoadTexture("textures/2k_venus_surface.jpg");
@@ -314,17 +447,69 @@ void init(GLFWwindow* window)
 	texture::uranus = Core::LoadTexture("textures/2k_uranus.jpg");
 	texture::neptune = Core::LoadTexture("textures/2k_neptune.jpg");
 
-
-
-
 	texture::earthNormal = Core::LoadTexture("textures/earth_normalmap.png");
 	texture::shipNormal = Core::LoadTexture("textures/spaceship_normal.jpg");
 	texture::rustNormal = Core::LoadTexture("textures/rust_normal.jpg");
 	texture::moonNormal = Core::LoadTexture("textures/moon_normal.jpg");
 
+	loadModelToContext("./models/test.obj", test);
+
 	
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+
+
+	//const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+
+	glGenFramebuffers(1, &hdrFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, hdrFBO);
+
+	glGenTextures(2, colorBuffers);
+	for (unsigned int i = 0; i < 2; i++)
+	{
+		glBindTexture(GL_TEXTURE_2D, colorBuffers[i]);
+		glTexImage2D(
+			GL_TEXTURE_2D, 0, GL_RGBA16F,WIDTH, HEIGHT, 0, GL_RGBA, GL_FLOAT, NULL
+		);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		glFramebufferTexture2D(
+			GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, colorBuffers[i], 0
+		);
+	}
+
+	unsigned int attachments[2] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1 };
+	glDrawBuffers(2, attachments);
+
+	float rectangleVertices[] =
+	{
+		//  Coords   // texCoords
+		 1.0f, -1.0f,  1.0f, 0.0f,
+		-1.0f, -1.0f,  0.0f, 0.0f,
+		-1.0f,  1.0f,  0.0f, 1.0f,
+
+		 1.0f,  1.0f,  1.0f, 1.0f,
+		 1.0f, -1.0f,  1.0f, 0.0f,
+		-1.0f,  1.0f,  0.0f, 1.0f
+	};
+	
+	glGenVertexArrays(1, &rectVAO);
+	glGenBuffers(1, &rectVBO);
+	glBindVertexArray(rectVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, rectVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(rectangleVertices), &rectangleVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+
+
+
 	std::uniform_real_distribution<float> angleDistribution(0.0f, 2.0f * glm::pi<float>());
 	std::uniform_real_distribution<float> radiusDistribution(10.f, 17.f);
 
@@ -365,6 +550,7 @@ void init(GLFWwindow* window)
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
+
 }
 
 void shutdown(GLFWwindow* window)
@@ -399,6 +585,7 @@ void processInput(GLFWwindow* window)
 {
 	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
 	spaceshipUp = glm::vec3(0.f, 1.f, 0.f);
+
 	float angleSpeed = 0.01f;
 	float moveSpeed = 0.01f;
 
@@ -426,9 +613,11 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
 		START_AS = true;
 
-	glfwSetCursorPosCallback(window, mouseCallback);
+	//glfwSetCursorPosCallback(window, mouseCallback);
 
-	cameraPos = spaceshipPos - 0.5 * spaceshipDir + glm::vec3(0, 2, 0) * 0.1f;
+	//cameraPos = spaceshipPos - 0.5 * spaceshipDir + glm::vec3(0, 2, 0) * 0.1f;
+	//cameraDir = spaceshipDir;
+	cameraPos = spaceshipPos - 0.5 * spaceshipDir + glm::vec3(0, 1, 0) * 0.2f;
 	cameraDir = spaceshipDir;
 
 	//cameraDir = glm::normalize(-cameraPos);

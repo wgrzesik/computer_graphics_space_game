@@ -121,5 +121,17 @@
     <None Include="shaders\shader_5_tex.frag">
       <Filter>Shader Files</Filter>
     </None>
+    <None Include="shaders\shader_bloom.vert">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="shaders\shader_bloom.frag">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="shaders\shader_quad.vert">
+      <Filter>Shader Files</Filter>
+    </None>
+    <None Include="shaders\shader_quad.frag">
+      <Filter>Shader Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

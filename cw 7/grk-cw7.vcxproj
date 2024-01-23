@@ -45,6 +45,10 @@
     <None Include="shaders\shader_5_sun.vert" />
     <None Include="shaders\shader_5_tex.frag" />
     <None Include="shaders\shader_5_tex.vert" />
+    <None Include="shaders\shader_bloom.frag" />
+    <None Include="shaders\shader_bloom.vert" />
+    <None Include="shaders\shader_quad.frag" />
+    <None Include="shaders\shader_quad.vert" />
     <None Include="shaders\shader_skybox.frag" />
     <None Include="shaders\shader_skybox.vert" />
   </ItemGroup>
