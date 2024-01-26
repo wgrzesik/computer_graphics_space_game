@@ -1,7 +1,7 @@
 #version 430 core
 
-float AMBIENT = 0.9;
-float roughness = 0.2;
+float AMBIENT = 0.2;
+float roughness = 0.1;
 float metalic = 0.8;
 
 
@@ -20,8 +20,8 @@ out vec4 outColor;
 void main()
 {
 	vec3 normal = vec3(0,0,1);
-	vec3 L = normalize(lightDirTS- worldPos);
-	vec3 V = normalize(viewDirTS - worldPos);
+	vec3 L = (lightDirTS);
+	vec3 V = (viewDirTS);
 
 	vec3 textureColor = texture2D(colorTexture, vecTex).xyz;
 

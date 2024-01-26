@@ -81,6 +81,10 @@ float aspectRatio = 1.f;
 
 unsigned int textureID;
 
+float tiltAngle=0;
+//= glm::radians(0.0f); // K¹t przechylenia statku
+
+
 glm::mat4 createCameraMatrix()
 {
 	glm::vec3 cameraSide = glm::normalize(glm::cross(cameraDir,glm::vec3(0.f,1.f,0.f)));
@@ -135,11 +139,15 @@ void drawObjectTexture(Core::RenderContext& context, glm::mat4 modelMatrix, GLui
 	glUseProgram(programTex);
 	glm::mat4 viewProjectionMatrix = createPerspectiveMatrix() * createCameraMatrix();
 	glm::mat4 transformation = viewProjectionMatrix * modelMatrix;
+
+
+
 	glUniformMatrix4fv(glGetUniformLocation(programTex, "transformation"), 1, GL_FALSE, (float*)&transformation);
 	glUniformMatrix4fv(glGetUniformLocation(programTex, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
 	glUniform3f(glGetUniformLocation(programTex, "lightPos"), 0, 0, 0);
 	Core::SetActiveTexture(normalMapId, "normalSampler", programTex, 1);
 	Core::SetActiveTexture(textureID, "colorTexture", programTex, 0);
+	glUniform3f(glGetUniformLocation(programTex, "cameraPos"), cameraPos.x, cameraPos.y, cameraPos.z);
 	Core::DrawContext(context);
 
 }
@@ -190,12 +198,19 @@ glm::mat4 specshipCameraRotrationMatrix = glm::mat4({
 	0.,0.,0.,1.,
 	});
 
+
+
+
+
 void renderScene(GLFWwindow* window)
 {
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glm::mat4 transformation;
 	float time = glfwGetTime();
+
+
+	
 	drawObjectSkyBox(cubeContext, glm::translate(cameraPos));
 
 
@@ -213,14 +228,10 @@ void renderScene(GLFWwindow* window)
 	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 7) * glm::translate(glm::vec3(20.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::uranus, texture::rustNormal);
 	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 8) * glm::translate(glm::vec3(23.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::neptune, texture::rustNormal);
 
-	
 
-	//drawObjectColor(shipContext,
-	//	glm::translate(cameraPos + 1.5 * cameraDir + cameraUp * -0.5f) * inveseCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>()),
-	//	glm::vec3(0.3, 0.3, 0.5)
-	//	);
 	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
 	spaceshipUp = glm::normalize(glm::cross(spaceshipSide, spaceshipDir));
+
 	specshipCameraRotrationMatrix = glm::mat4({
 		spaceshipSide.x,spaceshipSide.y,spaceshipSide.z,0,
 		spaceshipUp.x,spaceshipUp.y,spaceshipUp.z ,0,
@@ -228,10 +239,16 @@ void renderScene(GLFWwindow* window)
 		0.,0.,0.,1.,
 		});
 
+
+
 	drawObjectTexture(shipContext,
-		glm::translate(spaceshipPos) * specshipCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>())*glm::scale(glm::vec3(0.1f)),
+		glm::translate(spaceshipPos) * specshipCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>()) * glm::rotate(glm::mat4(), tiltAngle * glm::radians(30.f), glm::vec3(0, 0, 1)) * glm::scale(glm::vec3(0.1f)),
 		texture::ship, texture::shipNormal
-	);
+		);
+	//drawObjectTexture(shipContext,
+	//	glm::translate(spaceshipPos) * specshipCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>())*glm::scale(glm::vec3(0.1f)),
+	//	texture::ship, texture::shipNormal
+	//);
 
 	generatePlanetoidBelt();
 
@@ -258,6 +275,8 @@ void renderScene(GLFWwindow* window)
 		//std::cout << cameraDir.x << cameraDir.y << cameraDir.z << std::endl;
 		//steps = 0;
 	}
+
+
 	glUseProgram(0);
 	glfwSwapBuffers(window);
 }
@@ -288,10 +307,6 @@ void init(GLFWwindow* window)
 	glEnable(GL_DEPTH_TEST);
 	program = shaderLoader.CreateProgram("shaders/shader_5_1.vert", "shaders/shader_5_1.frag");
 
-	//programTex = shaderLoader.CreateProgram("shaders/shader_5_1_tex.vert", "shaders/shader_5_1_tex.frag");
-	//programEarth = shaderLoader.CreateProgram("shaders/shader_5_1_tex.vert", "shaders/shader_5_1_tex.frag");
-	//programProcTex = shaderLoader.CreateProgram("shaders/shader_5_1_tex.vert", "shaders/shader_5_1_tex.frag");
-
 	programTex = shaderLoader.CreateProgram("shaders/shader_5_tex.vert", "shaders/shader_5_tex.frag");
 	programEarth = shaderLoader.CreateProgram("shaders/shader_5_tex.vert", "shaders/shader_5_tex.frag");
 	programProcTex = shaderLoader.CreateProgram("shaders/shader_5_tex.vert", "shaders/shader_5_tex.frag");
@@ -316,13 +331,11 @@ void init(GLFWwindow* window)
 	texture::neptune = Core::LoadTexture("textures/2k_neptune.jpg");
 	texture::sun = Core::LoadTexture("textures/2k_sun.jpg");
 
-
-
-
 	texture::earthNormal = Core::LoadTexture("textures/earth_normalmap.png");
 	texture::shipNormal = Core::LoadTexture("textures/spaceship_normal.jpg");
 	texture::rustNormal = Core::LoadTexture("textures/rust_normal.jpg");
 	texture::moonNormal = Core::LoadTexture("textures/moon_normal.jpg");
+
 
 	
 	glGenTextures(1, &textureID);
@@ -377,6 +390,7 @@ void shutdown(GLFWwindow* window)
 double lastX = 0.0;
 double lastY = 0.0;
 
+
 void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 	
 	double deltaX = xpos - lastX;
@@ -388,21 +402,26 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 	deltaX *= sensitivity;
 	deltaY *= sensitivity;
 	glm::mat4 rotationMatrix = glm::eulerAngleY(-deltaX);
+
 	spaceshipDir = glm::normalize(rotationMatrix * glm::vec4(spaceshipDir,0));
-	spaceshipDir = spaceshipDir + glm::vec3(0, - deltaY / 4, 0);
+	spaceshipDir = spaceshipDir + glm::vec3(0, -deltaY / 4, 0);
+
 	/*specshipCameraRotrationMatrix = glm::rotate(specshipCameraRotrationMatrix, static_cast<float>(deltaX), glm::vec3(0.f, 1.f, 0.f));
 	specshipCameraRotrationMatrix = glm::rotate(specshipCameraRotrationMatrix, static_cast<float>(deltaY), spaceshipSide);
 	spaceshipDir = glm::normalize(glm::vec3(-specshipCameraRotrationMatrix[2]));
 	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
 	spaceshipUp = glm::normalize(glm::cross(spaceshipSide, spaceshipDir));*/
+
 }
 //obsluga wejscia
 void processInput(GLFWwindow* window)
 {
 	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
 	spaceshipUp = glm::vec3(0.f, 1.f, 0.f);
-	float angleSpeed = 0.05f;
-	float moveSpeed = 0.05f;
+	float angleSpeed = 0.005f;
+	float moveSpeed = 0.005f;
+
+
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -421,10 +440,14 @@ void processInput(GLFWwindow* window)
 		spaceshipPos += spaceshipUp * moveSpeed;
 	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
 		spaceshipPos -= spaceshipUp * moveSpeed;
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
 		spaceshipDir = glm::vec3(glm::eulerAngleY(angleSpeed) * glm::vec4(spaceshipDir, 0));
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+		tiltAngle -= 0.05;
+	}
+	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 		spaceshipDir = glm::vec3(glm::eulerAngleY(-angleSpeed) * glm::vec4(spaceshipDir, 0));
+		tiltAngle += 0.05;
+	}
 	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
 		START_AS = true;
 
@@ -432,6 +455,10 @@ void processInput(GLFWwindow* window)
 
 	cameraPos = spaceshipPos - 0.5 * spaceshipDir + glm::vec3(0, 2, 0) * 0.1f;
 	cameraDir = spaceshipDir;
+
+	tiltAngle = fmaxf(-1, fminf(1, tiltAngle));
+	
+
 
 	//cameraDir = glm::normalize(-cameraPos);
 

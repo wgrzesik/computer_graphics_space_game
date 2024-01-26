@@ -20,8 +20,12 @@ out vec3 lightDirTS;
 
 mat3 TBN;
 
+
+
 void main()
 {
+
+	
 	vec3 tangent = normalize(mat3(modelMatrix) * vertexTangent);
 	vec3 bitangent = normalize(mat3(modelMatrix) * vertexBitangent);
 	vec3 normal = normalize(mat3(modelMatrix) * vertexNormal);
