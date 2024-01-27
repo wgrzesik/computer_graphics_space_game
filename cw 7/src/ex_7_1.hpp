@@ -424,8 +424,8 @@ void processInput(GLFWwindow* window)
 {
 	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
 	spaceshipUp = glm::vec3(0.f, 1.f, 0.f);
-	float angleSpeed = 0.005f;
-	float moveSpeed = 0.005f;
+	float angleSpeed = 0.05f;
+	float moveSpeed = 0.05f;
 
 	double x = 0.002;
 

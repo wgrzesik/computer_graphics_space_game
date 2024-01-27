@@ -1,13 +1,16 @@
 #version 430 core
 
-float AMBIENT = 0.2;
-float roughness = 0.1;
+float AMBIENT = 0.6;
+float roughness = 0.2;
 float metalic = 0.8;
 
 
 uniform vec3 color;
 uniform sampler2D colorTexture;
 uniform sampler2D normalSampler;
+
+uniform sampler2D metalnessTexture;
+uniform sampler2D roughnessTexture;
 
 in vec3 worldPos;
 in vec2 vecTex;
@@ -24,6 +27,8 @@ void main()
 	vec3 V = (viewDirTS);
 
 	vec3 textureColor = texture2D(colorTexture, vecTex).xyz;
+	float metalnessValue = texture2D(metalnessTexture, vecTex).r;
+    float roughnessValue = texture2D(roughnessTexture, vecTex).r;
 
 	vec3 N = texture2D(normalSampler, vecTex).xyz;
 	N = 2.0 * N - 1.0;
