@@ -15,6 +15,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <string>
+#include <cmath>
 #include "SOIL/SOIL.h"
 
 namespace texture {
@@ -82,8 +83,12 @@ float aspectRatio = 1.f;
 unsigned int textureID;
 
 float tiltAngle=0;
-//= glm::radians(0.0f); // K¹t przechylenia statku
 
+
+
+double easeInExpo(double x) {
+	return pow(2, 10 * x - 10);
+}
 
 glm::mat4 createCameraMatrix()
 {
@@ -240,9 +245,8 @@ void renderScene(GLFWwindow* window)
 		});
 
 
-
 	drawObjectTexture(shipContext,
-		glm::translate(spaceshipPos) * specshipCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>()) * glm::rotate(glm::mat4(), tiltAngle * glm::radians(30.f), glm::vec3(0, 0, 1)) * glm::scale(glm::vec3(0.1f)),
+		glm::translate(spaceshipPos) * specshipCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>()) * glm::rotate(glm::mat4(), tiltAngle * glm::radians(30.0f), glm::vec3(0, 0, 1)) * glm::scale(glm::vec3(0.1f)),
 		texture::ship, texture::shipNormal
 		);
 	//drawObjectTexture(shipContext,
@@ -413,6 +417,8 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
 	spaceshipUp = glm::normalize(glm::cross(spaceshipSide, spaceshipDir));*/
 
 }
+
+
 //obsluga wejscia
 void processInput(GLFWwindow* window)
 {
@@ -421,7 +427,7 @@ void processInput(GLFWwindow* window)
 	float angleSpeed = 0.005f;
 	float moveSpeed = 0.005f;
 
-
+	double x = 0.002;
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -442,11 +448,22 @@ void processInput(GLFWwindow* window)
 		spaceshipPos -= spaceshipUp * moveSpeed;
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
 		spaceshipDir = glm::vec3(glm::eulerAngleY(angleSpeed) * glm::vec4(spaceshipDir, 0));
-		tiltAngle -= 0.05;
+		tiltAngle -= easeInExpo(x);
+	} else {
+		if (tiltAngle < 0) {
+			tiltAngle += 0.0005;
+		}
+
+
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 		spaceshipDir = glm::vec3(glm::eulerAngleY(-angleSpeed) * glm::vec4(spaceshipDir, 0));
-		tiltAngle += 0.05;
+		tiltAngle += easeInExpo(-x);
+	} else {
+		if (tiltAngle > 0) {
+			tiltAngle -= 0.0005;
+		}
+
 	}
 	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
 		START_AS = true;
@@ -457,6 +474,9 @@ void processInput(GLFWwindow* window)
 	cameraDir = spaceshipDir;
 
 	tiltAngle = fmaxf(-1, fminf(1, tiltAngle));
+
+	// dodaæ else, ¿e jak klawisz  A/D nie wciœniêty to siê prostuje
+	//niech ta funkcja easinexpo zadzia³a pls
 	
 
 
