@@ -62,8 +62,8 @@ void main()
 
 
 	float diffuse=max(0.0001,dot(N,L));
-	vec3 lambertian = max(0.00001, dot(N,L))*textureColor;
+	
 
-	vec3 Final = (kD*textureColor/3.1458993) + specular;
-	outColor = vec4(Final*min(1.0,AMBIENT + diffuse), 1.0);
+	
+	outColor = vec4(BRDF*min(1.0,AMBIENT + diffuse), 1.0);
 }
