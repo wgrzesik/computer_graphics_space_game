@@ -43,6 +43,8 @@ namespace texture {
 
 	GLuint metalnessSphere;
 	GLuint roughnessSphere;
+	GLuint metalnessShip;
+	GLuint roughnessShip;
 }
 
 
@@ -258,8 +260,8 @@ void renderScene(GLFWwindow* window)
 
 
 	drawObjectTexture(shipContext,
-		glm::translate(spaceshipPos) * specshipCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>()) * glm::rotate(glm::mat4(), tiltAngle * glm::radians(30.0f), glm::vec3(0, 0, 1)) * glm::scale(glm::vec3(0.1f)),
-		texture::ship, texture::shipNormal, texture::metalnessSphere, texture::roughnessSphere);
+		glm::translate(spaceshipPos) * specshipCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>()) * glm::rotate(glm::mat4(), tiltAngle * glm::radians(30.0f), glm::vec3(0, 0, 1)) * glm::scale(glm::vec3(0.025f)),
+		texture::ship, texture::shipNormal, texture::metalnessShip, texture::roughnessShip);
 	//drawObjectTexture(shipContext,
 	//	glm::translate(spaceshipPos) * specshipCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>())*glm::scale(glm::vec3(0.1f)),
 	//	texture::ship, texture::shipNormal
@@ -329,11 +331,11 @@ void init(GLFWwindow* window)
 	programSkyBox = shaderLoader.CreateProgram("shaders/shader_skybox.vert", "shaders/shader_skybox.frag");
 
 	loadModelToContext("./models/sphere.obj", sphereContext);
-	loadModelToContext("./models/spaceship.obj", shipContext);
+	loadModelToContext("./models/spaceship_new.obj", shipContext);
 	loadModelToContext("./models/cube.obj", cubeContext);
 
 	texture::earth = Core::LoadTexture("textures/earth.png");
-	texture::ship = Core::LoadTexture("textures/spaceship.jpg");
+	texture::ship = Core::LoadTexture("textures/ship/spaceship_color.jpg");
 	texture::moon = Core::LoadTexture("textures/moon.jpg");
 	texture::rust = Core::LoadTexture("textures/rust.jpg");
 
@@ -347,12 +349,15 @@ void init(GLFWwindow* window)
 	texture::sun = Core::LoadTexture("textures/2k_sun.jpg");
 
 	texture::earthNormal = Core::LoadTexture("textures/earth_normalmap.png");
-	texture::shipNormal = Core::LoadTexture("textures/spaceship_normal.jpg");
+	texture::shipNormal = Core::LoadTexture("textures/ship/spaceship_nmap.jpg");
 	texture::rustNormal = Core::LoadTexture("textures/rust_normal.jpg");
 	texture::moonNormal = Core::LoadTexture("textures/moon_normal.jpg");
 
 	texture::metalnessSphere = Core::LoadTexture("textures/rusty_metal_sheet_diff_2k.jpg");
 	texture::roughnessSphere = Core::LoadTexture("textures/rough_concrete_diff_1k.jpg");
+
+	texture::metalnessShip = Core::LoadTexture("textures/ship/spaceship_metalness.jpg");
+	texture::roughnessShip = Core::LoadTexture("textures/ship/spaceship_rough.jpg");
 
 
 	
@@ -438,8 +443,8 @@ void processInput(GLFWwindow* window)
 {
 	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
 	spaceshipUp = glm::vec3(0.f, 1.f, 0.f);
-	float angleSpeed = 0.05f;
-	float moveSpeed = 0.05f;
+	float angleSpeed = 0.005f;
+	float moveSpeed = 0.005f;
 
 	double x = 0.002;
 
