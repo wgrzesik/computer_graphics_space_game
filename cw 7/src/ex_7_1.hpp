@@ -87,7 +87,8 @@ float aspectRatio = 1.f;
 
 unsigned int textureID;
 
-float tiltAngle=0;
+float tiltAngleSide;
+float tiltAngleUpDown;
 
 
 double easeInExpo(double x) {
@@ -260,7 +261,12 @@ void renderScene(GLFWwindow* window)
 
 
 	drawObjectTexture(shipContext,
-		glm::translate(spaceshipPos) * specshipCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>()) * glm::rotate(glm::mat4(), tiltAngle * glm::radians(30.0f), glm::vec3(0, 0, 1)) * glm::scale(glm::vec3(0.025f)),
+		glm::translate(spaceshipPos) * 
+		specshipCameraRotrationMatrix * 
+		glm::eulerAngleY(glm::pi<float>()) * 
+		glm::rotate(glm::mat4(), tiltAngleSide * glm::radians(30.0f), glm::vec3(0, 0, 1)) * 
+		glm::rotate(glm::mat4(), tiltAngleUpDown * glm::radians(20.0f), glm::vec3(1, 0, 0)) * 
+		glm::scale(glm::vec3(0.025f)),
 		texture::ship, texture::shipNormal, texture::metalnessShip, texture::roughnessShip);
 	//drawObjectTexture(shipContext,
 	//	glm::translate(spaceshipPos) * specshipCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>())*glm::scale(glm::vec3(0.1f)),
@@ -453,7 +459,7 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
 	}
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) 
 		spaceshipPos += spaceshipDir * moveSpeed;
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
 		spaceshipPos -= spaceshipDir * moveSpeed;
@@ -461,24 +467,38 @@ void processInput(GLFWwindow* window)
 		spaceshipPos += spaceshipSide * moveSpeed;
 	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
 		spaceshipPos -= spaceshipSide * moveSpeed;
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
+	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS){
 		spaceshipPos += spaceshipUp * moveSpeed;
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS)
+		tiltAngleUpDown -= easeInExpo(x);
+	}
+	else {
+		if (tiltAngleUpDown < 0) {
+			tiltAngleUpDown += 0.0005;
+		}
+	}
+	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS){
 		spaceshipPos -= spaceshipUp * moveSpeed;
+		tiltAngleUpDown += easeInExpo(x);
+	}
+	else {
+		if (tiltAngleUpDown > 0) {
+			tiltAngleUpDown -= 0.0005;
+		}
+	}
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
 		spaceshipDir = glm::vec3(glm::eulerAngleY(angleSpeed) * glm::vec4(spaceshipDir, 0));
-		tiltAngle -= easeInExpo(x);
+		tiltAngleSide -= easeInExpo(x);
 	} else {
-		if (tiltAngle < 0) {
-			tiltAngle += 0.0005;
+		if (tiltAngleSide < 0) {
+			tiltAngleSide += 0.0005;
 		}
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 		spaceshipDir = glm::vec3(glm::eulerAngleY(-angleSpeed) * glm::vec4(spaceshipDir, 0));
-		tiltAngle += easeInExpo(-x);
+		tiltAngleSide += easeInExpo(-x);
 	} else {
-		if (tiltAngle > 0) {
-			tiltAngle -= 0.0005;
+		if (tiltAngleSide > 0) {
+			tiltAngleSide -= 0.0005;
 		}
 	}
 	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
@@ -489,7 +509,8 @@ void processInput(GLFWwindow* window)
 	cameraPos = spaceshipPos - 0.5 * spaceshipDir + glm::vec3(0, 2, 0) * 0.1f;
 	cameraDir = spaceshipDir;
 
-	tiltAngle = fmaxf(-1, fminf(1, tiltAngle));
+	tiltAngleSide = fmaxf(-1, fminf(1, tiltAngleSide));
+	tiltAngleUpDown = fmaxf(-1, fminf(1, tiltAngleUpDown));
 
 
 	//cameraDir = glm::normalize(-cameraPos);
