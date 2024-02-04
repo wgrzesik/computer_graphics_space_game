@@ -17,7 +17,7 @@
 #include <string>
 #include <cmath>
 #include "SOIL/SOIL.h"
-
+#include <chrono>
 namespace texture {
 	GLuint earth;
 	GLuint clouds;
@@ -59,22 +59,25 @@ Core::Shader_Loader shaderLoader;
 Core::RenderContext shipContext;
 Core::RenderContext sphereContext;
 Core::RenderContext cubeContext;
-
-glm::vec3 cameraPos = glm::vec3(-4.f, 0, 0);
+Core::RenderContext starContext;
+Core::RenderContext saberContext;
+glm::vec3 cameraPos = glm::vec3(-3.f, 0, 0);
 glm::vec3 cameraDir = glm::vec3(1.f, 0.f, 0.f);
 
-glm::vec3 spaceshipPos = glm::vec3(-4.f, 0, 0);
+glm::vec3 spaceshipPos = glm::vec3(-3.f, 0, 0);
 glm::vec3 spaceshipDir = glm::vec3(1.f, 0.f, 0.f);
 
-bool START_AS = false;
+bool fire = false;
 float a = 3 ;
 
 std::random_device rd;
 std::mt19937 gen(rd());
-std::uniform_real_distribution<float> distribution(-0.5f, 0.5f);
-std::uniform_real_distribution<float> planetoidsYDistribution(-1.f, 1.f);
-std::uniform_real_distribution<float> planetoidsScaleDistribution(0.01f, 0.05f);
-float planetoidsArray[500][4];
+//std::uniform_real_distribution<float> distribution(-0.5f, 0.5f);
+std::uniform_real_distribution<float> radiusDistribution(-5.f, 5.f);
+std::uniform_real_distribution<float> planetoidsYDistribution(-3.f, 3.f);
+std::uniform_real_distribution<float> planetoidsXDistribution(-2.f, 10.f);
+std::uniform_real_distribution<float> planetoidsScaleDistribution(0.1f, 0.2f);
+float planetoidsArray[400][4];
 glm::vec3 asteroid_Calc = spaceshipDir * glm::vec3(a, a, a);
 glm::vec3 asteroid_Pos = spaceshipPos + glm::vec3(0, a, 0) + asteroid_Calc;
 glm::vec3 distance = asteroid_Pos - spaceshipPos;
@@ -84,7 +87,7 @@ double step = 0.0000001;
 GLuint VAO,VBO;
 float lastAsteroidTime = 0;
 float aspectRatio = 1.f;
-
+glm::vec3 ammoPos;
 unsigned int textureID;
 
 float tiltAngleSide;
@@ -192,23 +195,50 @@ void generateAsteroids(glm::vec3 asteroid_Pos, glm::vec3 distance, double step) 
 	drawObjectTexture(sphereContext, glm::translate(asteroid_Pos) * glm::scale(glm::vec3(0.1f)), texture::moon, texture::moonNormal,  texture::metalnessSphere, texture::roughnessSphere);
 			
 }
-
+float speed = 0.03;
+float starind = 50;
 void generatePlanetoidBelt() {
+	
 
-	for (int i = 0; i < 500; ++i) {
-		
-		float x = planetoidsArray[i][0];
-		float z = planetoidsArray[i][1];
-		float y = planetoidsArray[i][2];
-		float pScale = planetoidsArray[i][3];
+	for (int i = 0; i < 400; ++i) {
+		float z = planetoidsArray[i][0];
+		float y = planetoidsArray[i][1];
+		float pScale = planetoidsArray[i][2];
+		bool collision = false;
+		planetoidsArray[i][3] -= speed;
+		if (planetoidsArray[i][3] < -3.f) {
+			planetoidsArray[i][3] = 10.f;
+		}
+		float x = planetoidsArray[i][3];
+		for (int j = 0; j < i; ++j) {
+			float prevZ = planetoidsArray[j][0];
+			float prevY = planetoidsArray[j][1];
+			float prevScale = planetoidsArray[j][2];
+			float prevX = planetoidsArray[j][3];
 
-		float time = glfwGetTime();
+			float distance = std::sqrt((z - prevZ) * (z - prevZ) + (y - prevY) * (y - prevY) + (x - prevX) * (x - prevX));
 
-		drawObjectTexture(sphereContext,glm::eulerAngleY(time / 5) * glm::translate(glm::vec3(x, y, z)) * glm::scale(glm::vec3(pScale)), texture::moon, texture::moonNormal, texture::metalnessSphere, texture::roughnessSphere);
+			float sumRadii = pScale + prevScale;
+
+			if (distance < sumRadii) {
+				collision = true;
+				break;
+			}
+		}
+
+		if (!collision) {
+			if (fmod(i, starind) == 0) {
+				float time = glfwGetTime();
+				glm::mat4 modelMatrix = glm::translate(glm::vec3(x, y, z)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 1.0f));
+				drawObjectColor(starContext, modelMatrix * glm::eulerAngleX(time) * glm::scale(glm::vec3(0.03f)), glm::vec3(0.2,0.3,0.2));
+			}
+			else {
+				drawObjectTexture(sphereContext, glm::translate(glm::vec3(x, y, z)) * glm::scale(glm::vec3(pScale)), texture::moon, texture::moonNormal, texture::metalnessSphere, texture::roughnessSphere);
+			}
+		}
 	}
 }
 
-int steps = 0;
 glm::vec3 spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
 glm::vec3 spaceshipUp = glm::normalize(glm::cross(spaceshipSide, spaceshipDir));
 glm::mat4 specshipCameraRotrationMatrix = glm::mat4({
@@ -219,9 +249,6 @@ glm::mat4 specshipCameraRotrationMatrix = glm::mat4({
 	});
 
 
-
-
-
 void renderScene(GLFWwindow* window)
 {
 	glClearColor(0.0f, 0.3f, 0.3f, 1.0f);
@@ -230,23 +257,23 @@ void renderScene(GLFWwindow* window)
 	float time = glfwGetTime();
 
 
-	
+
 	drawObjectSkyBox(cubeContext, glm::translate(cameraPos));
 
 
-	drawObjectTexture(sphereContext, glm::scale(glm::mat4(), glm::vec3(2.0f, 2.0f, 2.0f)), texture::sun, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	//drawObjectTexture(sphereContext, glm::scale(glm::mat4(), glm::vec3(2.0f, 2.0f, 2.0f)), texture::sun, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
 
-	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(8.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::earth, texture::earthNormal, texture::metalnessSphere, texture::roughnessSphere);
-	drawObjectTexture(sphereContext,
-		glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(8.f, 0, 0)) * glm::eulerAngleY(time) * glm::translate(glm::vec3(1.f, 0, 0)) * glm::scale(glm::vec3(0.1f)), texture::moon, texture::moonNormal, texture::metalnessSphere, texture::roughnessSphere);
+	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(8.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::earth, texture::earthNormal, texture::metalnessSphere, texture::roughnessSphere);
+	//drawObjectTexture(sphereContext,
+	//	glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(8.f, 0, 0)) * glm::eulerAngleY(time) * glm::translate(glm::vec3(1.f, 0, 0)) * glm::scale(glm::vec3(0.1f)), texture::moon, texture::moonNormal, texture::metalnessSphere, texture::roughnessSphere);
 
-	drawObjectTexture(sphereContext, glm::eulerAngleY(time) * glm::translate(glm::vec3(4.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.15f)), texture::mercury, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
-	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 4) * glm::translate(glm::vec3(10.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.2f)), texture::mars, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
-	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 2) * glm::translate(glm::vec3(6.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::venus, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
-	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 50000) * glm::translate(glm::vec3(14.f, 0, 0)) * glm::eulerAngleY(time/500000) * glm::scale(glm::vec3(0.9f)), texture::jupiter, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
-	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 6) * glm::translate(glm::vec3(17.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.9f)), texture::saturn, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
-	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 7) * glm::translate(glm::vec3(20.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::uranus, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
-	drawObjectTexture(sphereContext, glm::eulerAngleY(time / 8) * glm::translate(glm::vec3(23.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::neptune, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	//drawObjectTexture(sphereContext, glm::eulerAngleY(time) * glm::translate(glm::vec3(4.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.15f)), texture::mercury, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 4) * glm::translate(glm::vec3(10.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.2f)), texture::mars, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 2) * glm::translate(glm::vec3(6.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::venus, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 50000) * glm::translate(glm::vec3(14.f, 0, 0)) * glm::eulerAngleY(time/500000) * glm::scale(glm::vec3(0.9f)), texture::jupiter, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 6) * glm::translate(glm::vec3(17.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.9f)), texture::saturn, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 7) * glm::translate(glm::vec3(20.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::uranus, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 8) * glm::translate(glm::vec3(23.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::neptune, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
 
 
 	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
@@ -261,11 +288,11 @@ void renderScene(GLFWwindow* window)
 
 
 	drawObjectTexture(shipContext,
-		glm::translate(spaceshipPos) * 
-		specshipCameraRotrationMatrix * 
-		glm::eulerAngleY(glm::pi<float>()) * 
-		glm::rotate(glm::mat4(), tiltAngleSide * glm::radians(30.0f), glm::vec3(0, 0, 1)) * 
-		glm::rotate(glm::mat4(), tiltAngleUpDown * glm::radians(20.0f), glm::vec3(1, 0, 0)) * 
+		glm::translate(spaceshipPos) *
+		specshipCameraRotrationMatrix *
+		glm::eulerAngleY(glm::pi<float>()) *
+		glm::rotate(glm::mat4(), tiltAngleSide * glm::radians(30.0f), glm::vec3(0, 0, 1)) *
+		glm::rotate(glm::mat4(), tiltAngleUpDown * glm::radians(20.0f), glm::vec3(1, 0, 0)) *
 		glm::scale(glm::vec3(0.025f)),
 		texture::ship, texture::shipNormal, texture::metalnessShip, texture::roughnessShip);
 	//drawObjectTexture(shipContext,
@@ -274,31 +301,15 @@ void renderScene(GLFWwindow* window)
 	//);
 
 	generatePlanetoidBelt();
+	lastAsteroidTime = glfwGetTime();
+	if (fire == true){
+		ammoPos = ammoPos + glm::vec3(0.1f, 0.f, 0.f);
+		std::cout << ammoPos.x;
+		glm::mat4 modelMatrix = glm::translate(ammoPos) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+		drawObjectColor(saberContext, glm::translate(ammoPos) * glm::scale(glm::vec3(0.005f)), glm::vec3(0.2, 0.3, 0.2));
+		}
 
-	if (time - lastAsteroidTime < 5 && START_AS) {	//funkcja generujaca pierwsza asteroide 
-		step = step + 0.03;
-		generateAsteroids(asteroid_Pos, distance, step);
-		//steps++;
-		//std::cout << steps << std::endl;
-	}
-	else {
-		float random_x = distribution(gen);
-		float random_y = distribution(gen);
-		float random_z = distribution(gen);
-		//std::cout << random_x << std::endl;
-		glm::vec3 random_dir = glm::normalize(glm::vec3(spaceshipDir.x + random_x, spaceshipDir.y +  random_y, spaceshipDir.z +  random_z));
-
-		asteroid_Calc = a * random_dir;
-		glm::vec3 estimated_Spaceship_Pos = spaceshipPos + glm::vec3(1.f, 1.f, 1.f) * glm::normalize(spaceshipDir);
-		asteroid_Pos = spaceshipPos + glm::vec3(0, a / 5, 0) + asteroid_Calc;
-		
-		distance = asteroid_Pos - estimated_Spaceship_Pos;
-		lastAsteroidTime = time;
-		step = 0.0001;
-		//std::cout << cameraDir.x << cameraDir.y << cameraDir.z << std::endl;
-		//steps = 0;
-	}
-
+	
 
 	glUseProgram(0);
 	glfwSwapBuffers(window);
@@ -339,7 +350,8 @@ void init(GLFWwindow* window)
 	loadModelToContext("./models/sphere.obj", sphereContext);
 	loadModelToContext("./models/spaceship_new.obj", shipContext);
 	loadModelToContext("./models/cube.obj", cubeContext);
-
+	loadModelToContext("./models/estrellica.obj", starContext);
+	loadModelToContext("./models/CraneoOBJ.obj", saberContext);
 	texture::earth = Core::LoadTexture("textures/earth.png");
 	texture::ship = Core::LoadTexture("textures/ship/spaceship_color.jpg");
 	texture::moon = Core::LoadTexture("textures/moon.jpg");
@@ -364,25 +376,21 @@ void init(GLFWwindow* window)
 
 	texture::metalnessShip = Core::LoadTexture("textures/ship/spaceship_metalness.jpg");
 	texture::roughnessShip = Core::LoadTexture("textures/ship/spaceship_rough.jpg");
-
+	for (int i = 0; i < 400; ++i) {
+		float z = radiusDistribution(gen);
+		float x = planetoidsXDistribution(gen);
+		float y = planetoidsYDistribution(gen);
+		float pScale = planetoidsScaleDistribution(gen);
+		planetoidsArray[i][0] = z;
+		planetoidsArray[i][1] = y;
+		planetoidsArray[i][2] = pScale;
+		planetoidsArray[i][3] = x;
+	}
 
 	
 	glGenTextures(1, &textureID);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-	std::uniform_real_distribution<float> angleDistribution(0.0f, 2.0f * glm::pi<float>());
-	std::uniform_real_distribution<float> radiusDistribution(10.f, 17.f);
-
-	for (int i = 0; i < 500; ++i) {
-		float angle = angleDistribution(gen);
-		float radius = radiusDistribution(gen);
-		float y = planetoidsYDistribution(gen);
-		float pScale = planetoidsScaleDistribution(gen);
-		planetoidsArray[i][0] = radius * std::cos(angle);
-		planetoidsArray[i][1] = radius * std::sin(angle);
-		planetoidsArray[i][2] = y;
-		planetoidsArray[i][3] = pScale;
-	}
-
+	
 	std::vector<std::string> filepaths = {
 		"textures/skybox/space_rt.png",
 		"textures/skybox/space_lf.png",
@@ -420,29 +428,13 @@ double lastX = 0.0;
 double lastY = 0.0;
 
 
-void mouseCallback(GLFWwindow* window, double xpos, double ypos) {
-	
-	double deltaX = xpos - lastX;
-	double deltaY = ypos - lastY;
-	lastX = xpos;
-	lastY = ypos;
-	//std::cout << lastY << "   " << ypos << std::endl;
-	const float sensitivity = 0.001f;
-	deltaX *= sensitivity;
-	deltaY *= sensitivity;
-	glm::mat4 rotationMatrix = glm::eulerAngleY(-deltaX);
 
-	spaceshipDir = glm::normalize(rotationMatrix * glm::vec4(spaceshipDir,0));
-	spaceshipDir = spaceshipDir + glm::vec3(0, -deltaY / 4, 0);
-
-	/*specshipCameraRotrationMatrix = glm::rotate(specshipCameraRotrationMatrix, static_cast<float>(deltaX), glm::vec3(0.f, 1.f, 0.f));
-	specshipCameraRotrationMatrix = glm::rotate(specshipCameraRotrationMatrix, static_cast<float>(deltaY), spaceshipSide);
-	spaceshipDir = glm::normalize(glm::vec3(-specshipCameraRotrationMatrix[2]));
-	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
-	spaceshipUp = glm::normalize(glm::cross(spaceshipSide, spaceshipDir));*/
-
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+		fire = true;
+		ammoPos = spaceshipPos;
+	}
 }
-
 
 //obsluga wejscia
 void processInput(GLFWwindow* window)
@@ -450,63 +442,59 @@ void processInput(GLFWwindow* window)
 	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
 	spaceshipUp = glm::vec3(0.f, 1.f, 0.f);
 	float angleSpeed = 0.005f;
-	float moveSpeed = 0.005f;
+	float moveSpeed = 0.01f;
 
-	double x = 0.002;
+	double x = 0.01;
 
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
 		glfwSetWindowShouldClose(window, true);
 	}
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) 
-		spaceshipPos += spaceshipDir * moveSpeed;
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		spaceshipPos -= spaceshipDir * moveSpeed;
-	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
-		spaceshipPos += spaceshipSide * moveSpeed;
-	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
-		spaceshipPos -= spaceshipSide * moveSpeed;
-	if (glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS){
-		spaceshipPos += spaceshipUp * moveSpeed;
-		tiltAngleUpDown -= easeInExpo(x);
-	}
-	else {
-		if (tiltAngleUpDown < 0) {
-			tiltAngleUpDown += 0.0005;
-		}
-	}
-	if (glfwGetKey(window, GLFW_KEY_E) == GLFW_PRESS){
-		spaceshipPos -= spaceshipUp * moveSpeed;
+	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+		spaceshipPos += glm::vec3(0.f,moveSpeed,0.f);
 		tiltAngleUpDown += easeInExpo(x);
 	}
 	else {
 		if (tiltAngleUpDown > 0) {
-			tiltAngleUpDown -= 0.0005;
+			tiltAngleUpDown -= 0.003;
 		}
 	}
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
+		spaceshipPos -= glm::vec3(0.f, moveSpeed, 0.f);
+		tiltAngleUpDown -= easeInExpo(x);
+	}
+	else {
+		if (tiltAngleUpDown < 0) {
+			tiltAngleUpDown += 0.003;
+		}
+	}
+	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
+		spaceshipPos += spaceshipSide * moveSpeed;
+	if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS)
+		spaceshipPos -= spaceshipSide * moveSpeed;
+
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-		spaceshipDir = glm::vec3(glm::eulerAngleY(angleSpeed) * glm::vec4(spaceshipDir, 0));
+		spaceshipPos -= glm::vec3(0.f, 0.f, moveSpeed);
 		tiltAngleSide -= easeInExpo(x);
 	} else {
 		if (tiltAngleSide < 0) {
-			tiltAngleSide += 0.0005;
+			tiltAngleSide += 0.003;
 		}
 	}
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-		spaceshipDir = glm::vec3(glm::eulerAngleY(-angleSpeed) * glm::vec4(spaceshipDir, 0));
+		spaceshipPos += glm::vec3(0.f, 0.f, moveSpeed);
 		tiltAngleSide += easeInExpo(-x);
 	} else {
 		if (tiltAngleSide > 0) {
-			tiltAngleSide -= 0.0005;
+			tiltAngleSide -= 0.003;
 		}
 	}
-	if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS)
-		START_AS = true;
+	
 
-	glfwSetCursorPosCallback(window, mouseCallback);
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
 
-	cameraPos = spaceshipPos - 0.5 * spaceshipDir + glm::vec3(0, 2, 0) * 0.1f;
+	cameraPos = spaceshipPos - 0.5 * spaceshipDir+ glm::vec3(0.f,0.3,0.f);
 	cameraDir = spaceshipDir;
 
 	tiltAngleSide = fmaxf(-1, fminf(1, tiltAngleSide));
