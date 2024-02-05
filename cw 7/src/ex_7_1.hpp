@@ -261,19 +261,19 @@ void renderScene(GLFWwindow* window)
 	drawObjectSkyBox(cubeContext, glm::translate(cameraPos));
 
 
-	//drawObjectTexture(sphereContext, glm::scale(glm::mat4(), glm::vec3(2.0f, 2.0f, 2.0f)), texture::sun, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	drawObjectTexture(sphereContext, glm::translate(glm::vec3(20.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(), glm::vec3(2.0f, 2.0f, 2.0f)), texture::sun, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
 
-	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(8.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::earth, texture::earthNormal, texture::metalnessSphere, texture::roughnessSphere);
+	drawObjectTexture(sphereContext, glm::translate(glm::vec3(18.0f, 0.0f, 3.0f)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::earth, texture::earthNormal, texture::metalnessSphere, texture::roughnessSphere);
 	//drawObjectTexture(sphereContext,
 	//	glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(8.f, 0, 0)) * glm::eulerAngleY(time) * glm::translate(glm::vec3(1.f, 0, 0)) * glm::scale(glm::vec3(0.1f)), texture::moon, texture::moonNormal, texture::metalnessSphere, texture::roughnessSphere);
 
-	//drawObjectTexture(sphereContext, glm::eulerAngleY(time) * glm::translate(glm::vec3(4.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.15f)), texture::mercury, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
-	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 4) * glm::translate(glm::vec3(10.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.2f)), texture::mars, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
-	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 2) * glm::translate(glm::vec3(6.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::venus, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
-	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 50000) * glm::translate(glm::vec3(14.f, 0, 0)) * glm::eulerAngleY(time/500000) * glm::scale(glm::vec3(0.9f)), texture::jupiter, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
-	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 6) * glm::translate(glm::vec3(17.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.9f)), texture::saturn, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
-	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 7) * glm::translate(glm::vec3(20.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::uranus, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
-	//drawObjectTexture(sphereContext, glm::eulerAngleY(time / 8) * glm::translate(glm::vec3(23.f, 0, 0)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::neptune, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	drawObjectTexture(sphereContext,  glm::translate(glm::vec3(18.f, 0, -3.0f)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.15f)), texture::mercury, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	drawObjectTexture(sphereContext,  glm::translate(glm::vec3(17.f, 0, -4.0f)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.2f)), texture::mars, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	drawObjectTexture(sphereContext,  glm::translate(glm::vec3(17.f, 0, 4.0f)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::venus, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	drawObjectTexture(sphereContext,  glm::translate(glm::vec3(15.f, 0, -6.0f)) * glm::eulerAngleY(time/500000) * glm::scale(glm::vec3(0.9f)), texture::jupiter, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	drawObjectTexture(sphereContext,  glm::translate(glm::vec3(15.f, 0, 6.0f)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.9f)), texture::saturn, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	drawObjectTexture(sphereContext,  glm::translate(glm::vec3(13.f, 0, 8.0f)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::uranus, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	drawObjectTexture(sphereContext, glm::translate(glm::vec3(13.f, 0, -8.0f)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.6f)), texture::neptune, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
 
 
 	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
