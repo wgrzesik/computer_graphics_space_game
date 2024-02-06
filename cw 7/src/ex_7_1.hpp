@@ -18,6 +18,8 @@
 #include <cmath>
 #include "SOIL/SOIL.h"
 #include <chrono>
+#include <sstream>
+
 namespace texture {
 	GLuint earth;
 	GLuint clouds;
@@ -77,7 +79,7 @@ std::uniform_real_distribution<float> radiusDistribution(-5.f, 5.f);
 std::uniform_real_distribution<float> planetoidsYDistribution(-3.f, 3.f);
 std::uniform_real_distribution<float> planetoidsXDistribution(-2.f, 10.f);
 std::uniform_real_distribution<float> planetoidsScaleDistribution(0.1f, 0.2f);
-float planetoidsArray[400][4];
+float planetoidsArray[400][5];
 glm::vec3 asteroid_Calc = spaceshipDir * glm::vec3(a, a, a);
 glm::vec3 asteroid_Pos = spaceshipPos + glm::vec3(0, a, 0) + asteroid_Calc;
 glm::vec3 distance = asteroid_Pos - spaceshipPos;
@@ -92,6 +94,9 @@ unsigned int textureID;
 
 float tiltAngleSide;
 float tiltAngleUpDown;
+
+int colission = 3;
+int star = 0;
 
 
 double easeInExpo(double x) {
@@ -197,7 +202,17 @@ void generateAsteroids(glm::vec3 asteroid_Pos, glm::vec3 distance, double step) 
 }
 float speed = 0.03;
 float starind = 50;
+
+
+
+bool checkCollision(glm::vec3 objectPos, float objectRadius, glm::vec3 spaceshipPos, float spaceshipRadius, bool isStar) {
+	float distance = glm::length(objectPos - spaceshipPos);
+	float starExtraRadius = isStar ? 0.03f : 0.0f;
+	return distance < objectRadius + spaceshipRadius + starExtraRadius;
+}
+
 void generatePlanetoidBelt() {
+	
 	
 
 	for (int i = 0; i < 400; ++i) {
@@ -206,10 +221,17 @@ void generatePlanetoidBelt() {
 		float pScale = planetoidsArray[i][2];
 		bool collision = false;
 		planetoidsArray[i][3] -= speed;
+
+		if (planetoidsArray[i][4] == 1) {
+			// Planeta ju¿ uczestniczy³a w kolizji, przejdŸ do kolejnej iteracji
+			continue;
+		}
+
 		if (planetoidsArray[i][3] < -3.f) {
 			planetoidsArray[i][3] = 10.f;
 		}
 		float x = planetoidsArray[i][3];
+		
 		for (int j = 0; j < i; ++j) {
 			float prevZ = planetoidsArray[j][0];
 			float prevY = planetoidsArray[j][1];
@@ -219,23 +241,64 @@ void generatePlanetoidBelt() {
 			float distance = std::sqrt((z - prevZ) * (z - prevZ) + (y - prevY) * (y - prevY) + (x - prevX) * (x - prevX));
 
 			float sumRadii = pScale + prevScale;
+		
+
 
 			if (distance < sumRadii) {
 				collision = true;
 				break;
 			}
 		}
-
+		if (!collision) {
+			if( fmod(i, starind) == 0) {
+				if (checkCollision(glm::vec3(x, y, z), 0.1f, spaceshipPos, 0.025f,true)) {
+					// Kolizja z gwiazd¹
+					std::cout << "Collision with star " << i << std::endl;
+					planetoidsArray[i][4] = 1;
+					
+				}
+		}
+			else if (checkCollision(glm::vec3(x, y, z), 0.1f, spaceshipPos, 0.025f, true))
+			{
+				//kolizja z asteroida
+				std::cout << "Collision with asteroid " << i << std::endl;
+				colission--;
+				planetoidsArray[i][4] = 1;
+				if (colission == 0)
+				{
+					exit(0);
+				}
+			}
+		}
+		
 		if (!collision) {
 			if (fmod(i, starind) == 0) {
 				float time = glfwGetTime();
 				glm::mat4 modelMatrix = glm::translate(glm::vec3(x, y, z)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 1.0f));
 				drawObjectColor(starContext, modelMatrix * glm::eulerAngleX(time) * glm::scale(glm::vec3(0.03f)), glm::vec3(0.2,0.3,0.2));
+				if (star == 0)
+				{
+					star++;
+					std::cout << "Star " << star << std::endl;
+
+				}
+				
 			}
 			else {
 				drawObjectTexture(sphereContext, glm::translate(glm::vec3(x, y, z)) * glm::scale(glm::vec3(pScale)), texture::moon, texture::moonNormal, texture::metalnessSphere, texture::roughnessSphere);
+				
+
 			}
 		}
+		
+	}
+	if(star==1)
+	{
+		star = 0;
+	}
+	else
+	{
+		exit(0);
 	}
 }
 
@@ -247,6 +310,7 @@ glm::mat4 specshipCameraRotrationMatrix = glm::mat4({
 	-spaceshipDir.x,-spaceshipDir.y,-spaceshipDir.z,0,
 	0.,0.,0.,1.,
 	});
+
 
 
 void renderScene(GLFWwindow* window)
