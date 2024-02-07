@@ -63,6 +63,8 @@ Core::RenderContext sphereContext;
 Core::RenderContext cubeContext;
 Core::RenderContext starContext;
 Core::RenderContext saberContext;
+Core::RenderContext heartContext;
+
 glm::vec3 cameraPos = glm::vec3(-3.f, 0, 0);
 glm::vec3 cameraDir = glm::vec3(1.f, 0.f, 0.f);
 
@@ -373,7 +375,15 @@ void renderScene(GLFWwindow* window)
 		drawObjectColor(saberContext, glm::translate(ammoPos) * glm::scale(glm::vec3(0.005f)), glm::vec3(0.2, 0.3, 0.2));
 		}
 
-	
+	drawObjectColor(starContext, glm::translate(glm::vec3(10.0f, 2.0f, 12.0f)) * glm::rotate(glm::mat4(), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.03f)), glm::vec3(0, 1, 0));
+	drawObjectColor(starContext, glm::translate(glm::vec3(10.0f, 2.0f, 11.5f)) * glm::rotate(glm::mat4(), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.03f)), glm::vec3(0, 1, 0));
+	drawObjectColor(starContext, glm::translate(glm::vec3(10.0f, 2.0f, 11.0f)) * glm::rotate(glm::mat4(), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.03f)), glm::vec3(0, 1, 0));
+
+	drawObjectColor(heartContext, glm::translate(glm::vec3(10.0f, 1.0f, 11.0f)) * glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0));
+	drawObjectColor(heartContext, glm::translate(glm::vec3(10.0f, 1.0f, 10.5f)) * glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0));
+	drawObjectColor(heartContext, glm::translate(glm::vec3(10.0f, 1.0f, 10.0f)) * glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0));
+	drawObjectColor(heartContext, glm::translate(glm::vec3(10.0f, 1.0f, 11.5f)) * glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0));
+	drawObjectColor(heartContext, glm::translate(glm::vec3(10.0f, 1.0f, 12.0f)) * glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0));
 
 	glUseProgram(0);
 	glfwSwapBuffers(window);
@@ -416,6 +426,8 @@ void init(GLFWwindow* window)
 	loadModelToContext("./models/cube.obj", cubeContext);
 	loadModelToContext("./models/estrellica.obj", starContext);
 	loadModelToContext("./models/CraneoOBJ.obj", saberContext);
+	loadModelToContext("./models/heart.obj", heartContext);
+
 	texture::earth = Core::LoadTexture("textures/earth.png");
 	texture::ship = Core::LoadTexture("textures/ship/spaceship_color.jpg");
 	texture::moon = Core::LoadTexture("textures/moon.jpg");
