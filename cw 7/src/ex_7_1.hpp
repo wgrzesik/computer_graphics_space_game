@@ -72,8 +72,7 @@ glm::vec3 spaceshipPos = glm::vec3(-3.f, 0, 0);
 glm::vec3 spaceshipDir = glm::vec3(1.f, 0.f, 0.f);
 
 bool fire = false;
-float a = 3 ;
-
+float a = 3;
 std::random_device rd;
 std::mt19937 gen(rd());
 //std::uniform_real_distribution<float> distribution(-0.5f, 0.5f);
@@ -89,7 +88,10 @@ glm::vec3 distance = asteroid_Pos - spaceshipPos;
 double step = 0.0000001;
 
 GLuint VAO,VBO;
-float lastAsteroidTime = 0;
+float lastFiretime = 0;
+float ammoReloadTime = 3.0f;  // Czas ≈Çadowania amunicji w sekundach
+float ammoReloadProgress = 0.0f;
+
 float aspectRatio = 1.f;
 glm::vec3 ammoPos;
 unsigned int textureID;
@@ -99,12 +101,19 @@ float tiltAngleUpDown;
 
 int colission = 3;
 int star = 0;
-int star_counter = 0;
+int star_counter = 1;
+float starMetalness = 0.8;
+float starRoughness = 0.1;
+glm::vec3 lightPos = glm::vec3(-8, 4, 2);
+glm::vec3 lightColor = glm::vec3(0.9, 0.7, 0.8) * 100;
+glm::vec3 lightDir = glm::vec3(0, 0, 0);
 
+float spotlightPhi = 3.14 / 3;
 
 double easeInExpo(double x) {
 	return pow(2, 10 * x - 10);
 }
+
 
 glm::mat4 createCameraMatrix()
 {
@@ -143,17 +152,25 @@ glm::mat4 createPerspectiveMatrix()
 	return perspectiveMatrix;
 }
 
-void drawObjectColor(Core::RenderContext& context, glm::mat4 modelMatrix, glm::vec3 color) {
-
+void drawObjectColor(Core::RenderContext& context, glm::mat4 modelMatrix, glm::vec3 color, float metalness, float roughness, glm::vec3 lightstarPos) {
 	glUseProgram(program);
 	glm::mat4 viewProjectionMatrix = createPerspectiveMatrix() * createCameraMatrix();
 	glm::mat4 transformation = viewProjectionMatrix * modelMatrix;
+
 	glUniformMatrix4fv(glGetUniformLocation(program, "transformation"), 1, GL_FALSE, (float*)&transformation);
 	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
-	glUniform3f(glGetUniformLocation(program, "color"), color.x, color.y, color.z);
-	glUniform3f(glGetUniformLocation(program, "lightPos"), 0, 0, 0);
-	Core::DrawContext(context);
+	glUniform3f(glGetUniformLocation(program, "lightPos"), lightstarPos.x, lightstarPos.y, lightstarPos.z);
 
+	glUniform3f(glGetUniformLocation(program, "color"), color.x, color.y, color.z);
+	glUniform3f(glGetUniformLocation(program, "lightColor"), lightColor.r, lightColor.g, lightColor.b);
+	glUniform3f(glGetUniformLocation(program, "cameraPos"), cameraPos.x, cameraPos.y, cameraPos.z);
+	glUniform1f(glGetUniformLocation(program, "metalness"), metalness);
+	glUniform1f(glGetUniformLocation(program, "roughness"), roughness);
+
+
+	// Przesy≈Çanie informacji o widoku (view) do shadera
+
+	Core::DrawContext(context);
 }
 
 void drawObjectTexture(Core::RenderContext& context, glm::mat4 modelMatrix, GLuint textureID, GLuint normalMapId, GLuint metalnessTexture, GLuint roughnessTexture) {
@@ -196,6 +213,44 @@ void drawObjectSkyBox(Core::RenderContext& context, glm::mat4 modelMatrix) {
 	glEnable(GL_DEPTH_TEST);
 
 }
+void updateAmmoReload() {
+	float deltaTime = static_cast<float>(glfwGetTime() - lastFiretime);
+	
+	if (fire) {
+		ammoReloadProgress += 1.0f / ammoReloadTime * deltaTime;
+		if (ammoReloadProgress >= 1.0f) {
+			ammoReloadProgress = 1.0f;
+			fire = false;  
+		}
+	}
+	else {
+		ammoReloadProgress = fmaxf(0.0f, ammoReloadProgress - 1.0f / ammoReloadTime * deltaTime);
+	}
+}
+
+void drawAmmoReloadBar() {
+	glUseProgram(program);
+
+	float barWidth = 0.01f;
+	float barHeight = 0.02f;
+	float barOffsetX = spaceshipPos.x-0.1f;  
+	float barOffsetY = spaceshipPos.y -0.1f; 
+	float barOffsetZ = spaceshipPos.z; 
+
+	glm::mat4 viewProjectionMatrix = createPerspectiveMatrix() * createCameraMatrix();
+	glm::mat4 barModelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(barOffsetX, barOffsetY, barOffsetZ));
+
+	barModelMatrix = glm::scale(barModelMatrix, glm::vec3(barWidth, barHeight, ammoReloadProgress/5));
+
+	glm::mat4 transformation = viewProjectionMatrix * barModelMatrix;
+	glUniformMatrix4fv(glGetUniformLocation(program, "transformation"), 1, GL_FALSE, (float*)&transformation);
+	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&barModelMatrix);
+	glUniform3f(glGetUniformLocation(program, "color"), 0.0f, 1.0f, 0.0f);
+	glUniform3f(glGetUniformLocation(program, "lightPos"), 0, 0, 0);
+
+	Core::DrawContext(cubeContext);
+	glUseProgram(0);
+}
 
 void generateAsteroids(glm::vec3 asteroid_Pos, glm::vec3 distance, double step) {
 	glm::vec3 normalizedDir = glm::normalize(distance);
@@ -225,16 +280,21 @@ void generatePlanetoidBelt() {
 		float pScale = planetoidsArray[i][2];
 		bool collision = false;
 		planetoidsArray[i][3] -= speed;
+		float x = planetoidsArray[i][3];
+		if (planetoidsArray[i][3] < -3.f) {
+			planetoidsArray[i][0] += spaceshipPos.z;  // P≈Çynne przesuniƒôcie na nowƒÖ pozycjƒô
+			planetoidsArray[i][1] += spaceshipPos.y;
+			planetoidsArray[i][3] = 10.f;
+			planetoidsArray[i][4] == 0;
+	
+		}
 
 		if (planetoidsArray[i][4] == 1) {
-			// Planeta juø uczestniczy≥a w kolizji, przejdü do kolejnej iteracji
+			// Planeta juÔøΩ uczestniczyÔøΩa w kolizji, przejdÔøΩ do kolejnej iteracji
 			continue;
 		}
 
-		if (planetoidsArray[i][3] < -3.f) {
-			planetoidsArray[i][3] = 10.f;
-		}
-		float x = planetoidsArray[i][3];
+	
 		
 		for (int j = 0; j < i; ++j) {
 			float prevZ = planetoidsArray[j][0];
@@ -256,8 +316,8 @@ void generatePlanetoidBelt() {
 		if (!collision) {
 			if( fmod(i, starind) == 0) {
 				if (checkCollision(glm::vec3(x, y, z), 0.1f, spaceshipPos, 0.025f,true)) {
-					// Kolizja z gwiazdπ
-					std::cout << "Collision with star " << i << std::endl;
+					// Kolizja z gwiazdÔøΩ
+					//std::cout << "Collision with star " << i << std::endl;
 					planetoidsArray[i][4] = 1;
 					star_counter++;
 					if (star_counter == 3){
@@ -290,7 +350,7 @@ void generatePlanetoidBelt() {
 			if (fmod(i, starind) == 0) {
 				float time = glfwGetTime();
 				glm::mat4 modelMatrix = glm::translate(glm::vec3(x, y, z)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 1.0f));
-				drawObjectColor(starContext, modelMatrix * glm::eulerAngleX(time) * glm::scale(glm::vec3(0.03f)), glm::vec3(1, 1, 0.7));
+				drawObjectColor(starContext, modelMatrix * glm::eulerAngleX(time) * glm::scale(glm::vec3(0.03f)), glm::vec3(1, 1, 0.7), starMetalness, starRoughness, spaceshipPos);
 				if (star == 0)
 				{
 					star++;
@@ -327,27 +387,27 @@ glm::mat4 specshipCameraRotrationMatrix = glm::mat4({
 	});
 
 void drawStars(int star_number) {
-	float yOffset = 2.0f;
-	float zOffset = 12.0f;
+	float yOffset = 0.55f + spaceshipPos.y;
+	float zOffset =5.10f + spaceshipPos.z;
 	float scaleFactor = 0.03f;
 
 	for (int i = 0; i < star_number; ++i) {
-		drawObjectColor(starContext, glm::translate(glm::vec3(10.0f, yOffset, zOffset - i * 0.5f))
+		drawObjectColor(starContext, glm::translate(glm::vec3(2.3f, yOffset, (zOffset) - i * 0.5f ))
 			* glm::rotate(glm::mat4(), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f))
-			* glm::scale(glm::vec3(scaleFactor)), glm::vec3(0, 1, 0));
+			* glm::scale(glm::vec3(scaleFactor)), glm::vec3(1, 1, 0.7), starMetalness, starRoughness,glm::vec3(1.0f, yOffset, zOffset));
 	}
 }
 
 void drawHearts(int collision_number) {
-	float yOffset = 1.0f;
-	float zOffset = 12.0f;
+	float yOffset = -0.5f + spaceshipPos.y;
+	float zOffset = 6.15 + spaceshipPos.z;
 
 
 	for (int i = 0; i < 5; ++i) {
 		if (collision_number > i) {
-			drawObjectColor(heartContext, glm::translate(glm::vec3(10.0f, yOffset, zOffset - i * 0.5f))
+			drawObjectColor(heartContext, glm::translate(glm::vec3(3.5f, yOffset, (zOffset) - i * 0.5f))
 				* glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f))
-				* glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0));
+				* glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0), starMetalness, starRoughness, glm::vec3(1.0f, yOffset, zOffset));
 		}
 	}
 }
@@ -404,18 +464,17 @@ void renderScene(GLFWwindow* window)
 	//);
 
 	generatePlanetoidBelt();
-	lastAsteroidTime = glfwGetTime();
 	if (fire == true){
 		ammoPos = ammoPos + glm::vec3(0.025f, 0.f, 0.f);
-		std::cout << ammoPos.x;
-		glm::mat4 modelMatrix = glm::translate(ammoPos) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-		drawObjectColor(saberContext, glm::translate(ammoPos) * glm::scale(glm::vec3(0.005f)), glm::vec3(1, 0.2, 0.6));
+		glm::mat4 modelMatrix = glm::translate(ammoPos) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 1.0f));
+		drawObjectColor(saberContext, modelMatrix * glm::scale(glm::vec3(0.003f)), glm::vec3(0.1, 0.1, 0.7), starMetalness, starRoughness, spaceshipPos);
 		}
 
 	
 	drawStars(star_counter);
-	drawHearts(colission);
-
+	drawHearts(colission);	
+	//updateAmmoReload();
+	//drawAmmoReloadBar();
 	glUseProgram(0);
 	glfwSwapBuffers(window);
 }
@@ -540,6 +599,8 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 		fire = true;
 		ammoPos = spaceshipPos;
+		lastFiretime = glfwGetTime();
+
 	}
 }
 
@@ -560,20 +621,20 @@ void processInput(GLFWwindow* window)
 	}
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 		spaceshipPos += glm::vec3(0.f,moveSpeed,0.f);
-		tiltAngleUpDown += easeInExpo(x);
-	}
-	else {
-		if (tiltAngleUpDown > 0) {
-			tiltAngleUpDown -= 0.003;
-		}
-	}
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
-		spaceshipPos -= glm::vec3(0.f, moveSpeed, 0.f);
 		tiltAngleUpDown -= easeInExpo(x);
 	}
 	else {
 		if (tiltAngleUpDown < 0) {
 			tiltAngleUpDown += 0.003;
+		}
+	}
+	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS){
+		spaceshipPos -= glm::vec3(0.f, moveSpeed, 0.f);
+		tiltAngleUpDown += easeInExpo(x);
+	}
+	else {
+		if (tiltAngleUpDown > 0) {
+			tiltAngleUpDown -= 0.003;
 		}
 	}
 	if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS)
