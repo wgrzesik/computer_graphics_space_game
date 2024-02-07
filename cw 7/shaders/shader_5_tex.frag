@@ -65,5 +65,5 @@ void main()
 	
 
 	
-	outColor = vec4(BRDF*min(1.0,AMBIENT + diffuse), 1.0);
+	outColor = vec4(BRDF*(AMBIENT + diffuse)*1.5, 1.0);
 }

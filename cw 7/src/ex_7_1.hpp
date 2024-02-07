@@ -101,7 +101,7 @@ float tiltAngleUpDown;
 
 int colission = 3;
 int star = 0;
-int star_counter = 1;
+int star_counter = 0;
 float starMetalness = 0.8;
 float starRoughness = 0.1;
 glm::vec3 lightPos = glm::vec3(-8, 4, 2);
