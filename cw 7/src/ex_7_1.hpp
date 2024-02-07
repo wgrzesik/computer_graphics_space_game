@@ -99,6 +99,7 @@ float tiltAngleUpDown;
 
 int colission = 3;
 int star = 0;
+int star_counter = 0;
 
 
 double easeInExpo(double x) {
@@ -202,7 +203,8 @@ void generateAsteroids(glm::vec3 asteroid_Pos, glm::vec3 distance, double step) 
 	drawObjectTexture(sphereContext, glm::translate(asteroid_Pos) * glm::scale(glm::vec3(0.1f)), texture::moon, texture::moonNormal,  texture::metalnessSphere, texture::roughnessSphere);
 			
 }
-float speed = 0.03;
+//float speed = 0.03;
+float speed = 0.01;
 float starind = 50;
 
 
@@ -217,7 +219,7 @@ void generatePlanetoidBelt() {
 	
 	
 
-	for (int i = 0; i < 400; ++i) {
+	for (int i = 0; i < 100; ++i) {
 		float z = planetoidsArray[i][0];
 		float y = planetoidsArray[i][1];
 		float pScale = planetoidsArray[i][2];
@@ -257,9 +259,10 @@ void generatePlanetoidBelt() {
 					// Kolizja z gwiazd¹
 					std::cout << "Collision with star " << i << std::endl;
 					planetoidsArray[i][4] = 1;
+					star_counter++;
 					
 				}
-		}
+			}
 			else if (checkCollision(glm::vec3(x, y, z), 0.1f, spaceshipPos, 0.025f, true))
 			{
 				//kolizja z asteroida
@@ -271,13 +274,20 @@ void generatePlanetoidBelt() {
 					exit(0);
 				}
 			}
+			else if ((checkCollision(glm::vec3(x, y, z), 0.1f, ammoPos, 0.025f, true)))
+			{
+				// Asteroida zestrzelona
+				std::cout << "Collision with ammo " << i << std::endl;
+				planetoidsArray[i][4] = 1;
+
+			}
 		}
 		
 		if (!collision) {
 			if (fmod(i, starind) == 0) {
 				float time = glfwGetTime();
 				glm::mat4 modelMatrix = glm::translate(glm::vec3(x, y, z)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 1.0f));
-				drawObjectColor(starContext, modelMatrix * glm::eulerAngleX(time) * glm::scale(glm::vec3(0.03f)), glm::vec3(0.2,0.3,0.2));
+				drawObjectColor(starContext, modelMatrix * glm::eulerAngleX(time) * glm::scale(glm::vec3(0.03f)), glm::vec3(1, 1, 0.7));
 				if (star == 0)
 				{
 					star++;
@@ -313,7 +323,31 @@ glm::mat4 specshipCameraRotrationMatrix = glm::mat4({
 	0.,0.,0.,1.,
 	});
 
+void drawStars(int star_number) {
+	float yOffset = 2.0f;
+	float zOffset = 12.0f;
+	float scaleFactor = 0.03f;
 
+	for (int i = 0; i < star_number; ++i) {
+		drawObjectColor(starContext, glm::translate(glm::vec3(10.0f, yOffset, zOffset - i * 0.5f))
+			* glm::rotate(glm::mat4(), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f))
+			* glm::scale(glm::vec3(scaleFactor)), glm::vec3(0, 1, 0));
+	}
+}
+
+void drawHearts(int collision_number) {
+	float yOffset = 1.0f;
+	float zOffset = 12.0f;
+
+
+	for (int i = 0; i < 5; ++i) {
+		if (collision_number > i) {
+			drawObjectColor(heartContext, glm::translate(glm::vec3(10.0f, yOffset, zOffset - i * 0.5f))
+				* glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f))
+				* glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0));
+		}
+	}
+}
 
 void renderScene(GLFWwindow* window)
 {
@@ -369,21 +403,15 @@ void renderScene(GLFWwindow* window)
 	generatePlanetoidBelt();
 	lastAsteroidTime = glfwGetTime();
 	if (fire == true){
-		ammoPos = ammoPos + glm::vec3(0.1f, 0.f, 0.f);
+		ammoPos = ammoPos + glm::vec3(0.025f, 0.f, 0.f);
 		std::cout << ammoPos.x;
 		glm::mat4 modelMatrix = glm::translate(ammoPos) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-		drawObjectColor(saberContext, glm::translate(ammoPos) * glm::scale(glm::vec3(0.005f)), glm::vec3(0.2, 0.3, 0.2));
+		drawObjectColor(saberContext, glm::translate(ammoPos) * glm::scale(glm::vec3(0.005f)), glm::vec3(1, 0.2, 0.6));
 		}
 
-	drawObjectColor(starContext, glm::translate(glm::vec3(10.0f, 2.0f, 12.0f)) * glm::rotate(glm::mat4(), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.03f)), glm::vec3(0, 1, 0));
-	drawObjectColor(starContext, glm::translate(glm::vec3(10.0f, 2.0f, 11.5f)) * glm::rotate(glm::mat4(), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.03f)), glm::vec3(0, 1, 0));
-	drawObjectColor(starContext, glm::translate(glm::vec3(10.0f, 2.0f, 11.0f)) * glm::rotate(glm::mat4(), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.03f)), glm::vec3(0, 1, 0));
-
-	drawObjectColor(heartContext, glm::translate(glm::vec3(10.0f, 1.0f, 11.0f)) * glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0));
-	drawObjectColor(heartContext, glm::translate(glm::vec3(10.0f, 1.0f, 10.5f)) * glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0));
-	drawObjectColor(heartContext, glm::translate(glm::vec3(10.0f, 1.0f, 10.0f)) * glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0));
-	drawObjectColor(heartContext, glm::translate(glm::vec3(10.0f, 1.0f, 11.5f)) * glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0));
-	drawObjectColor(heartContext, glm::translate(glm::vec3(10.0f, 1.0f, 12.0f)) * glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f)) * glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0));
+	
+	drawStars(star_counter);
+	drawHearts(colission);
 
 	glUseProgram(0);
 	glfwSwapBuffers(window);
