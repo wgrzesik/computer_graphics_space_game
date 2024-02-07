@@ -212,44 +212,7 @@ void drawObjectSkyBox(Core::RenderContext& context, glm::mat4 modelMatrix) {
 	glEnable(GL_DEPTH_TEST);
 
 }
-void updateAmmoReload() {
-	float deltaTime = static_cast<float>(glfwGetTime() - lastFiretime);
-	
-	if (fire) {
-		ammoReloadProgress += 1.0f / ammoReloadTime * deltaTime;
-		if (ammoReloadProgress >= 1.0f) {
-			ammoReloadProgress = 1.0f;
-			fire = false;  
-		}
-	}
-	else {
-		ammoReloadProgress = fmaxf(0.0f, ammoReloadProgress - 1.0f / ammoReloadTime * deltaTime);
-	}
-}
 
-void drawAmmoReloadBar() {
-	glUseProgram(program);
-
-	float barWidth = 0.01f;
-	float barHeight = 0.02f;
-	float barOffsetX = spaceshipPos.x-0.1f;  
-	float barOffsetY = spaceshipPos.y -0.1f; 
-	float barOffsetZ = spaceshipPos.z; 
-
-	glm::mat4 viewProjectionMatrix = createPerspectiveMatrix() * createCameraMatrix();
-	glm::mat4 barModelMatrix = glm::translate(glm::mat4(1.0f), glm::vec3(barOffsetX, barOffsetY, barOffsetZ));
-
-	barModelMatrix = glm::scale(barModelMatrix, glm::vec3(barWidth, barHeight, ammoReloadProgress/5));
-
-	glm::mat4 transformation = viewProjectionMatrix * barModelMatrix;
-	glUniformMatrix4fv(glGetUniformLocation(program, "transformation"), 1, GL_FALSE, (float*)&transformation);
-	glUniformMatrix4fv(glGetUniformLocation(program, "modelMatrix"), 1, GL_FALSE, (float*)&barModelMatrix);
-	glUniform3f(glGetUniformLocation(program, "color"), 0.0f, 1.0f, 0.0f);
-	glUniform3f(glGetUniformLocation(program, "lightPos"), 0, 0, 0);
-
-	Core::DrawContext(cubeContext);
-	glUseProgram(0);
-}
 
 void drawObjectSun(Core::RenderContext& context, glm::mat4 modelMatrix, GLuint textureID)
 {
@@ -294,8 +257,8 @@ void generatePlanetoidBelt() {
 		planetoidsArray[i][3] -= speed;
 		float x = planetoidsArray[i][3];
 		if (planetoidsArray[i][3] < -3.f) {
-			planetoidsArray[i][0] += spaceshipPos.z;  // Płynne przesunięcie na nową pozycję
-			planetoidsArray[i][1] += spaceshipPos.y;
+			//planetoidsArray[i][0] += spaceshipPos.z - planetoidsArray[i][0];
+			//planetoidsArray[i][1] += spaceshipPos.y - planetoidsArray[i][1];
 			planetoidsArray[i][3] = 10.f;
 			planetoidsArray[i][4] == 0;
 	
