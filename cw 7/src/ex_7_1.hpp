@@ -219,7 +219,7 @@ void generatePlanetoidBelt() {
 	
 	
 
-	for (int i = 0; i < 100; ++i) {
+	for (int i = 0; i < 150; ++i) {
 		float z = planetoidsArray[i][0];
 		float y = planetoidsArray[i][1];
 		float pScale = planetoidsArray[i][2];
@@ -260,6 +260,9 @@ void generatePlanetoidBelt() {
 					std::cout << "Collision with star " << i << std::endl;
 					planetoidsArray[i][4] = 1;
 					star_counter++;
+					if (star_counter == 3){
+						exit(0);
+					}
 					
 				}
 			}
@@ -304,14 +307,14 @@ void generatePlanetoidBelt() {
 		}
 		
 	}
-	if(star==1)
-	{
-		star = 0;
-	}
-	else
-	{
-		exit(0);
-	}
+	//if(star==1)
+	//{
+	//	star = 0;
+	//}
+	//else
+	//{
+	//	exit(0);
+	//}
 }
 
 glm::vec3 spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
