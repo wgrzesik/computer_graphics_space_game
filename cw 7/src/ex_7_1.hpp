@@ -190,11 +190,23 @@ void drawObjectSkyBox(Core::RenderContext& context, glm::mat4 modelMatrix) {
 	glUniformMatrix4fv(glGetUniformLocation(programSkyBox, "transformation"), 1, GL_FALSE, (float*)&transformation);
 	glUniformMatrix4fv(glGetUniformLocation(programSkyBox, "modelMatrix"), 1, GL_FALSE, (float*)&modelMatrix);
 	glUniform3f(glGetUniformLocation(programSkyBox, "lightPos"), 0, 0, 0);
-	//Core::SetActiveTexture(textureID, "colorTexture", programSkyBox, 0);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 	Core::DrawContext(context);
 	glEnable(GL_DEPTH_TEST);
 
+}
+
+void drawObjectSun(Core::RenderContext& context, glm::mat4 modelMatrix, GLuint textureID)
+{
+	glUseProgram(programSun);
+	glm::mat4 viewProjectionMatrix = createPerspectiveMatrix() * createCameraMatrix();
+	glm::mat4 transformation = viewProjectionMatrix * modelMatrix;
+	glUniformMatrix4fv(glGetUniformLocation(programSun, "transformation"), 1, GL_FALSE, (float*)&transformation);
+	glUniform1f(glGetUniformLocation(programSun, "exposition"), 1.f);
+	Core::SetActiveTexture(textureID, "sunTexture", programSun, 0);
+	glActiveTexture(GL_TEXTURE0); // Activate texture unit 0
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	Core::DrawContext(sphereContext);
 }
 
 void generateAsteroids(glm::vec3 asteroid_Pos, glm::vec3 distance, double step) {
@@ -307,14 +319,6 @@ void generatePlanetoidBelt() {
 		}
 		
 	}
-	//if(star==1)
-	//{
-	//	star = 0;
-	//}
-	//else
-	//{
-	//	exit(0);
-	//}
 }
 
 glm::vec3 spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
@@ -359,12 +363,9 @@ void renderScene(GLFWwindow* window)
 	glm::mat4 transformation;
 	float time = glfwGetTime();
 
-
-
 	drawObjectSkyBox(cubeContext, glm::translate(cameraPos));
-
-
-	drawObjectTexture(sphereContext, glm::translate(glm::vec3(20.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(), glm::vec3(2.0f, 2.0f, 2.0f)), texture::sun, texture::rustNormal, texture::metalnessSphere, texture::roughnessSphere);
+	
+	drawObjectSun(sphereContext, glm::translate(glm::vec3(20.0f, 0.0f, 0.0f)) * glm::scale(glm::mat4(), glm::vec3(2)), texture::sun);
 
 	drawObjectTexture(sphereContext, glm::translate(glm::vec3(18.0f, 0.0f, 3.0f)) * glm::eulerAngleY(time) * glm::scale(glm::vec3(0.3f)), texture::earth, texture::earthNormal, texture::metalnessSphere, texture::roughnessSphere);
 	//drawObjectTexture(sphereContext,
@@ -449,8 +450,8 @@ void init(GLFWwindow* window)
 	programTex = shaderLoader.CreateProgram("shaders/shader_5_tex.vert", "shaders/shader_5_tex.frag");
 	programEarth = shaderLoader.CreateProgram("shaders/shader_5_tex.vert", "shaders/shader_5_tex.frag");
 	programProcTex = shaderLoader.CreateProgram("shaders/shader_5_tex.vert", "shaders/shader_5_tex.frag");
-
 	programSkyBox = shaderLoader.CreateProgram("shaders/shader_skybox.vert", "shaders/shader_skybox.frag");
+	programSun = shaderLoader.CreateProgram("shaders/shader_5_sun.vert", "shaders/shader_5_sun.frag");
 
 	loadModelToContext("./models/sphere.obj", sphereContext);
 	loadModelToContext("./models/spaceship_new.obj", shipContext);
