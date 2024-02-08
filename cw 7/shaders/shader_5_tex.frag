@@ -1,9 +1,9 @@
 #version 430 core
 
-float AMBIENT = 0.6;
+float AMBIENT = 0.4;
 float roughness;
 float metalic;
-
+float MAX_DISTANCE = 12.0;
 
 uniform vec3 color;
 uniform sampler2D colorTexture;
@@ -17,7 +17,7 @@ in vec2 vecTex;
 
 in vec3 viewDirTS;
 in vec3 lightDirTS;
-
+in float distanceToCamera;
 out vec4 outColor;
 
 void main()
@@ -57,7 +57,10 @@ void main()
 
 	vec3 BRDF = kD*(textureColor/3.1458493) + specular;
 
-
+	if (distanceToCamera > MAX_DISTANCE)
+    {
+        discard;
+    }
 
 
 

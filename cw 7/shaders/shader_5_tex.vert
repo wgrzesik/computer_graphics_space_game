@@ -17,7 +17,7 @@ uniform vec3 cameraPos;
 
 out vec3 viewDirTS;
 out vec3 lightDirTS;
-
+out float distanceToCamera;
 mat3 TBN;
 
 
@@ -42,6 +42,6 @@ void main()
 
 	vecTex = vertexTexCoord;
 	vecTex.y = 1.0 - vecTex.y;
-
+	distanceToCamera = length(worldPos - cameraPos);
 	gl_Position = transformation * vec4(vertexPosition, 1.0);
 }
