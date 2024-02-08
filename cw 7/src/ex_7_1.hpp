@@ -477,7 +477,7 @@ void renderScene(GLFWwindow* window)
 	drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(4.f, -2.f, 3.0f)) * glm::scale(glm::vec3(0.57f)), texture::jupiter);
 	drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(15.f, -3.f, 6.0f)) * glm::scale(glm::vec3(0.8f)), texture::saturn);
 	//drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(13.f, -8.0f, 8.0f)) * glm::scale(glm::vec3(0.6f)), texture::uranus);
-	drawObjectSun(sphereContext, glm::translate(spaceshipPos + glm::vec3(13.f, 0.f, 7.0f))  * glm::scale(glm::vec3(0.42f)), texture::neptune);
+	drawObjectSun(sphereContext, glm::translate(spaceshipPos + glm::vec3(13.f, 0.f, 7.0f))  * glm::scale(glm::vec3(0.35f)), texture::neptune);
 	glDepthMask(GL_TRUE);
 
 	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
