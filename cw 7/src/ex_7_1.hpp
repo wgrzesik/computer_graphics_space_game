@@ -85,7 +85,7 @@ std::mt19937 gen(rd());
 std::uniform_real_distribution<float> radiusDistribution(-6.f, 6.f);
 std::uniform_real_distribution<float> planetoidsYDistribution(-5.f, 5.f);
 std::uniform_real_distribution<float> planetoidsXDistribution(-2.f, 11.f);
-std::uniform_real_distribution<float> planetoidsScaleDistribution(0.2f, 0.25f);
+std::uniform_real_distribution<float> planetoidsScaleDistribution(0.2f, 0.3f);
 std::vector<glm::vec4> shearVectors;
 std::vector<glm::vec3> scaleVectors;
 std::vector<glm::vec3> ammunitionPositions;
@@ -294,7 +294,7 @@ void generatePlanetoidBelt() {
 		planetoidsVector[i][3] -= speed;
 		float x = planetoidsVector[i][3];
 
-		if (planetoidsVector[i][3] < -3.f) {
+		if (planetoidsVector[i][3] < -3.5f) {
 			//planetoidsArray[i][0] += spaceshipPos.z - planetoidsArray[i][0];
 			//planetoidsArray[i][1] += spaceshipPos.y - planetoidsArray[i][1];
 		
@@ -374,7 +374,7 @@ void generatePlanetoidBelt() {
 					if (fmod(i, starind) == 0) {
 						float time = glfwGetTime();
 						glm::mat4 modelMatrix = glm::translate(glm::vec3(x, y, z)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 1.0f));
-						drawObjectColor(starContext, modelMatrix * glm::eulerAngleX(time) * glm::scale(glm::vec3(0.03f)), glm::vec3(0.1, 1.f, 1.0), starMetalness, starRoughness, spaceshipPos);
+						drawObjectColor(starContext, modelMatrix * glm::eulerAngleX(time) * glm::scale(glm::vec3(0.03f)), glm::vec3(0.1, 1.f, 1.0), starMetalness, starRoughness, glm::vec3(x-1, y, z));
 						if (star == 0)
 						{
 							star++;
@@ -384,7 +384,11 @@ void generatePlanetoidBelt() {
 
 					}
 					else {
-						drawObjectTexture(sphereContext, glm::translate(glm::vec3(x, y, z)) * glm::scale(Scale),
+						float rotationAngle = glm::radians(70*y);
+						glm::mat4 transformationMatrix = glm::translate(glm::vec3(x, y, z)) *
+							glm::rotate(glm::mat4(1.0f), rotationAngle, glm::vec3(1.0f, 0.0f, 1.0f)) *
+							glm::scale(glm::vec3(Scale));
+						drawObjectTexture(sphereContext, transformationMatrix,
 							texture::moon, texture::moonNormal, texture::metalnessSphere, texture::roughnessSphere);
 					}
 				}
@@ -467,13 +471,13 @@ void renderScene(GLFWwindow* window)
 	//drawObjectTexture(sphereContext,
 	//	glm::eulerAngleY(time / 3) * glm::translate(glm::vec3(8.f, 0, 0)) * glm::eulerAngleY(time) * glm::translate(glm::vec3(1.f, 0, 0)) * glm::scale(glm::vec3(0.1f)), texture::moon, texture::moonNormal, texture::metalnessSphere, texture::roughnessSphere);
 
-	drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(14.f, -4.5, -9.f)) * glm::scale(glm::vec3(0.15f)), texture::mercury);
-	drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(9.f, -5.f, -7.0f)) * glm::scale(glm::vec3(0.1f)), texture::mars);
-	drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(12.f, -2.f, -4.5f)) * glm::scale(glm::vec3(0.3f)), texture::venus);
-	drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(4.f, -2.f, 3.0f)) * glm::scale(glm::vec3(0.6f)), texture::jupiter);
-	drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(15.f, -2.f, 6.0f)) * glm::scale(glm::vec3(0.9f)), texture::saturn);
+	drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(14.f, -4.5, -9.f)) * glm::scale(glm::vec3(0.05f)), texture::mercury);
+	//drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(9.f, -5.f, -7.0f)) * glm::scale(glm::vec3(0.1f)), texture::mars);
+	drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(12.f, -2.7f, -5.5f)) * glm::scale(glm::vec3(0.2f)), texture::venus);
+	drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(4.f, -2.f, 3.0f)) * glm::scale(glm::vec3(0.57f)), texture::jupiter);
+	drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(15.f, -3.f, 6.0f)) * glm::scale(glm::vec3(0.8f)), texture::saturn);
 	//drawObjectSun(sphereContext,  glm::translate(spaceshipPos + glm::vec3(13.f, -8.0f, 8.0f)) * glm::scale(glm::vec3(0.6f)), texture::uranus);
-	drawObjectSun(sphereContext, glm::translate(spaceshipPos + glm::vec3(13.f, 0.f, 3.0f))  * glm::scale(glm::vec3(0.3f)), texture::neptune);
+	drawObjectSun(sphereContext, glm::translate(spaceshipPos + glm::vec3(13.f, 0.f, 7.0f))  * glm::scale(glm::vec3(0.42f)), texture::neptune);
 	glDepthMask(GL_TRUE);
 
 	spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
