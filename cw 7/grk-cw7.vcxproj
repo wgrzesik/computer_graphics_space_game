@@ -37,6 +37,8 @@
     <ClInclude Include="src\Texture.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="shaders\rocket.frag" />
+    <None Include="shaders\rocket.vert" />
     <None Include="shaders\shader_5_1.frag" />
     <None Include="shaders\shader_5_1.vert" />
     <None Include="shaders\shader_5_1_tex.frag" />

@@ -19,6 +19,8 @@
 #include "SOIL/SOIL.h"
 #include <chrono>
 #include <sstream>
+#include <fstream>
+#include <string>
 
 namespace texture {
 	GLuint earth;
@@ -64,7 +66,7 @@ Core::RenderContext cubeContext;
 Core::RenderContext starContext;
 Core::RenderContext saberContext;
 Core::RenderContext heartContext;
-
+Core::RenderContext rocketContext;
 glm::vec3 cameraPos = glm::vec3(-3.f, 0, 0);
 glm::vec3 cameraDir = glm::vec3(1.f, 0.f, 0.f);
 
@@ -80,6 +82,8 @@ std::uniform_real_distribution<float> radiusDistribution(-5.f, 5.f);
 std::uniform_real_distribution<float> planetoidsYDistribution(-3.f, 3.f);
 std::uniform_real_distribution<float> planetoidsXDistribution(-2.f, 10.f);
 std::uniform_real_distribution<float> planetoidsScaleDistribution(0.1f, 0.2f);
+std::vector<glm::vec3> ammunitionPositions;
+std::vector<glm::mat4> ammunitionModelMatrices;
 float planetoidsArray[400][5];
 glm::vec3 asteroid_Calc = spaceshipDir * glm::vec3(a, a, a);
 glm::vec3 asteroid_Pos = spaceshipPos + glm::vec3(0, a, 0) + asteroid_Calc;
@@ -246,8 +250,8 @@ bool checkCollision(glm::vec3 objectPos, float objectRadius, glm::vec3 spaceship
 }
 
 void generatePlanetoidBelt() {
-	
-	
+
+
 
 	for (int i = 0; i < 150; ++i) {
 		float z = planetoidsArray[i][0];
@@ -261,7 +265,7 @@ void generatePlanetoidBelt() {
 			//planetoidsArray[i][1] += spaceshipPos.y - planetoidsArray[i][1];
 			planetoidsArray[i][3] = 10.f;
 			planetoidsArray[i][4] == 0;
-	
+
 		}
 
 		if (planetoidsArray[i][4] == 1) {
@@ -269,8 +273,8 @@ void generatePlanetoidBelt() {
 			continue;
 		}
 
-	
-		
+
+
 		for (int j = 0; j < i; ++j) {
 			float prevZ = planetoidsArray[j][0];
 			float prevY = planetoidsArray[j][1];
@@ -280,7 +284,7 @@ void generatePlanetoidBelt() {
 			float distance = std::sqrt((z - prevZ) * (z - prevZ) + (y - prevY) * (y - prevY) + (x - prevX) * (x - prevX));
 
 			float sumRadii = pScale + prevScale;
-		
+
 
 
 			if (distance < sumRadii) {
@@ -289,16 +293,16 @@ void generatePlanetoidBelt() {
 			}
 		}
 		if (!collision) {
-			if( fmod(i, starind) == 0) {
-				if (checkCollision(glm::vec3(x, y, z), 0.1f, spaceshipPos, 0.025f,true)) {
+			if (fmod(i, starind) == 0) {
+				if (checkCollision(glm::vec3(x, y, z), 0.1f, spaceshipPos, 0.025f, true)) {
 					// Kolizja z gwiazd�
 					//std::cout << "Collision with star " << i << std::endl;
 					planetoidsArray[i][4] = 1;
 					star_counter++;
-					if (star_counter == 3){
+					if (star_counter == 3) {
 						exit(0);
 					}
-					
+
 				}
 			}
 			else if (checkCollision(glm::vec3(x, y, z), 0.1f, spaceshipPos, 0.025f, true))
@@ -312,38 +316,45 @@ void generatePlanetoidBelt() {
 					exit(0);
 				}
 			}
-			else if ((checkCollision(glm::vec3(x, y, z), 0.1f, ammoPos, 0.025f, true)))
+			else
 			{
-				// Asteroida zestrzelona
-				std::cout << "Collision with ammo " << i << std::endl;
-				planetoidsArray[i][4] = 1;
-
-			}
-		}
-		
-		if (!collision) {
-			if (fmod(i, starind) == 0) {
-				float time = glfwGetTime();
-				glm::mat4 modelMatrix = glm::translate(glm::vec3(x, y, z)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 1.0f));
-				drawObjectColor(starContext, modelMatrix * glm::eulerAngleX(time) * glm::scale(glm::vec3(0.03f)), glm::vec3(1, 1, 0.7), starMetalness, starRoughness, spaceshipPos);
-				if (star == 0)
+				for (int n = 0; n < ammunitionPositions.size(); ++n)
 				{
-					star++;
-					std::cout << "Star " << star << std::endl;
-
+					if (checkCollision(glm::vec3(x, y, z), 0.1f, ammunitionPositions[n], 0.025f, true))
+					{
+						// Asteroida zestrzelona
+						std::cout << "Collision with ammo " << i << std::endl;
+						planetoidsArray[i][4] = 1;
+					}
 				}
-				
 			}
-			else {
-				drawObjectTexture(sphereContext, glm::translate(glm::vec3(x, y, z)) * glm::scale(glm::vec3(pScale)), texture::moon, texture::moonNormal, texture::metalnessSphere, texture::roughnessSphere);
-				
+		}
+				if (!collision) {
+					if (fmod(i, starind) == 0) {
+						float time = glfwGetTime();
+						glm::mat4 modelMatrix = glm::translate(glm::vec3(x, y, z)) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 1.0f));
+						drawObjectColor(starContext, modelMatrix * glm::eulerAngleX(time) * glm::scale(glm::vec3(0.03f)), glm::vec3(1, 1, 0.7), starMetalness, starRoughness, spaceshipPos);
+						if (star == 0)
+						{
+							star++;
+							std::cout << "Star " << star << std::endl;
+
+						}
+
+					}
+					else {
+						drawObjectTexture(sphereContext, glm::translate(glm::vec3(x, y, z)) * glm::scale(glm::vec3(pScale)), texture::moon, texture::moonNormal, texture::metalnessSphere, texture::roughnessSphere);
+
+
+					}
+				}
 
 			}
 		}
-		
-	}
-}
+	
 
+
+	
 glm::vec3 spaceshipSide = glm::normalize(glm::cross(spaceshipDir, glm::vec3(0.f, 1.f, 0.f)));
 glm::vec3 spaceshipUp = glm::normalize(glm::cross(spaceshipSide, spaceshipDir));
 glm::mat4 specshipCameraRotrationMatrix = glm::mat4({
@@ -375,6 +386,28 @@ void drawHearts(int collision_number) {
 			drawObjectColor(heartContext, glm::translate(glm::vec3(3.5f, yOffset, (zOffset) - i * 0.5f))
 				* glm::rotate(glm::mat4(), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f))
 				* glm::scale(glm::vec3(0.025f)), glm::vec3(1, 0, 0), starMetalness, starRoughness, glm::vec3(1.0f, yOffset, zOffset));
+		}
+	}
+}
+void updateAmmunition() {
+	if (fire) {
+		glm::vec3 newAmmoPos = spaceshipPos + glm::vec3(0.025f, 0.f, 0.f);
+		ammunitionPositions.push_back(newAmmoPos);
+		fire = false;
+	}
+
+}
+
+void renderAmmunition() {
+
+	for (int i = ammunitionPositions.size() - 1; i >= 0; --i) {
+		ammunitionPositions[i] = ammunitionPositions[i] + glm::vec3(0.025f, 0.f, 0.f);
+		if (ammunitionPositions[i].x > 8.f) {
+			ammunitionPositions.erase(ammunitionPositions.begin() + i);
+		}
+		else {
+			glm::mat4 modelMatrix = glm::translate(ammunitionPositions[i]) * glm::rotate(glm::mat4(1.0f), glm::radians(90.f), glm::vec3(1.0f, 0.0f, 0.f));
+			drawObjectColor(rocketContext, glm::translate(ammunitionPositions[i]) * glm::rotate(glm::mat4(1.0f), glm::radians(270.f), glm::vec3(0.0f, 1.0f, 0.f)) * glm::scale(glm::vec3(0.003f)), glm::vec3(0.1, 0.1, 0.7), starMetalness, starRoughness, spaceshipPos);
 		}
 	}
 }
@@ -426,19 +459,20 @@ void renderScene(GLFWwindow* window)
 	//	glm::translate(spaceshipPos) * specshipCameraRotrationMatrix * glm::eulerAngleY(glm::pi<float>())*glm::scale(glm::vec3(0.1f)),
 	//	texture::ship, texture::shipNormal
 	//);
-
+	updateAmmunition();
+	renderAmmunition();
 	generatePlanetoidBelt();
-	if (fire == true){
-		ammoPos = ammoPos + glm::vec3(0.025f, 0.f, 0.f);
-		glm::mat4 modelMatrix = glm::translate(ammoPos) * glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 1.0f));
-		drawObjectColor(saberContext, modelMatrix * glm::scale(glm::vec3(0.003f)), glm::vec3(0.1, 0.1, 0.7), starMetalness, starRoughness, spaceshipPos);
-		}
+	//if (fire == true){
+	//	ammoPos = ammoPos + glm::vec3(0.025f, 0.f, 0.f);
+	//	glm::mat4 modelMatrix = glm::translate(ammoPos) * glm::rotate(glm::mat4(1.0f), glm::radians(90.f), glm::vec3(1.0f, 0.0f, 0.f));
+	//	drawObjectColor(rocketContext, modelMatrix * glm::rotate(glm::mat4(1.0f), glm::radians(270.f), glm::vec3(0.0f, 1.0f, 0.f)) * glm::scale(glm::vec3(0.003f)), glm::vec3(0.1, 0.1, 0.7), starMetalness, starRoughness, spaceshipPos);
+	//	}
 
-	
+	glDisable(GL_DEPTH_TEST);
 	drawStars(star_counter);
 	drawHearts(colission);	
-	//updateAmmoReload();
-	//drawAmmoReloadBar();
+	glEnable(GL_DEPTH_TEST);
+
 	glUseProgram(0);
 	glfwSwapBuffers(window);
 }
@@ -481,6 +515,7 @@ void init(GLFWwindow* window)
 	loadModelToContext("./models/estrellica.obj", starContext);
 	loadModelToContext("./models/CraneoOBJ.obj", saberContext);
 	loadModelToContext("./models/heart.obj", heartContext);
+	loadModelToContext("./models/rocket.obj", rocketContext);
 
 	texture::earth = Core::LoadTexture("textures/earth.png");
 	texture::ship = Core::LoadTexture("textures/ship/spaceship_color.jpg");
@@ -506,6 +541,8 @@ void init(GLFWwindow* window)
 
 	texture::metalnessShip = Core::LoadTexture("textures/ship/spaceship_metalness.jpg");
 	texture::roughnessShip = Core::LoadTexture("textures/ship/spaceship_rough.jpg");
+
+
 	for (int i = 0; i < 400; ++i) {
 		float z = radiusDistribution(gen);
 		float x = planetoidsXDistribution(gen);
