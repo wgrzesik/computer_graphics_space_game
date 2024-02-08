@@ -1,8 +1,5 @@
 # Interaktywny symulator lotu kosmicznego 3D "Interstellar Odyssey"
-
-Wiktoria Grzesik <br>
-Maksymilian Szygenda <br>
-Nikodem Hederych <br>
+![Screenshot](screenshot.png)
 
 ## Motyw Aplikacji:
 Interstellar Odyssey to gra zręcznościowa, której celem jest zebranie określonej liczby gwiazdek jednocześnie unikając pojawiających sie asteroid, które mogą zostać zniszczone pociskami gracza. 
@@ -25,4 +22,9 @@ Interstellar Odyssey to gra zręcznościowa, której celem jest zebranie określ
 * Skybox
 * Kolizje
 * Animacja ruchu statku: Płynne i realistyczne ruchy statku kosmicznego przy skręcaniu, wznoszeniu i opadaniu.
+
+### 
+Wiktoria Grzesik <br>
+Maksymilian Szygenda <br>
+Nikodem Hederych <br>
 
