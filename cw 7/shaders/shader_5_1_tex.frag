@@ -1,7 +1,7 @@
 #version 430 core
 
 float AMBIENT = 0.1;
-
+float MAX_DISTANCE = 6.0;
 uniform vec3 color;
 uniform vec3 lightPos;
 uniform sampler2D colorTexture;
@@ -16,6 +16,10 @@ void main()
 	vec3 lightDir = normalize(lightPos-worldPos);
 	vec3 normal = normalize(vecNormal);
 	vec3 textureColor = texture2D(colorTexture, vecTex).xyz;
+	if (distanceToCamera > MAX_DISTANCE)
+    {
+        discard;
+    }
 	float diffuse=max(0,dot(normal,lightDir));
 	outColor = vec4(textureColor*min(1,AMBIENT+diffuse), 1.0);
 }
